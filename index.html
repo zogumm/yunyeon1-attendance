@@ -1,0 +1,784 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="출석">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1e40af">
+<base target="_top">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>유년1부 출석체크</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;background:#f4f6fb;color:#1e293b;
+  padding-bottom:calc(90px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;z-index:5;background:#1e40af;color:#fff;padding:12px 16px 10px;
+  padding-top:calc(12px + env(safe-area-inset-top))}
+.hrow{display:flex;align-items:center;gap:8px}
+header h1{font-size:18px;font-weight:800;flex:1}
+header select{border:none;border-radius:8px;padding:6px 8px;font-size:14px;font-family:inherit;max-width:40vw}
+.p .time{font-size:12px;font-weight:600;color:#15803d;margin-left:4px}
+.p .tag.ab{background:#fee2e2;color:#b91c1c}
+.sum{font-size:13px;margin-top:6px;opacity:.9}
+.chips{display:flex;gap:6px;overflow-x:auto;padding:10px 12px;background:#fff;border-bottom:1px solid #e2e8f0;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex-shrink:0;border:1.5px solid #cbd5e1;background:#fff;border-radius:999px;padding:7px 13px;font-size:14px;
+  font-weight:600;color:#475569;font-family:inherit}
+.chip.on{background:#1e40af;border-color:#1e40af;color:#fff}
+.chip small{font-weight:500;opacity:.8;margin-left:3px}
+.list{padding:12px;display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.team-title{grid-column:1/-1;font-size:13px;font-weight:700;color:#64748b;margin-top:6px}
+.p{display:flex;align-items:center;gap:10px;background:#fff;border:2px solid #e2e8f0;border-radius:12px;
+  padding:12px;font-size:16px;font-weight:600;text-align:left;font-family:inherit;color:#334155;min-height:56px}
+.p .box{width:26px;height:26px;border-radius:8px;border:2px solid #cbd5e1;flex-shrink:0;display:flex;
+  align-items:center;justify-content:center;font-size:17px;color:#fff}
+.p.on{border-color:#22c55e;background:#f0fdf4;color:#14532d}
+.p.on .box{background:#22c55e;border-color:#22c55e}
+.p .tag{font-size:11px;font-weight:700;padding:2px 6px;border-radius:6px;margin-left:auto;background:#fef3c7;color:#92400e}
+.p .tag.t{background:#e0e7ff;color:#3730a3}
+.empty{grid-column:1/-1;padding:40px 20px;text-align:center;color:#64748b;line-height:1.7;font-size:15px}
+.warn{margin:10px 12px 0;padding:10px 12px;border-radius:10px;background:#fef3c7;color:#92400e;font-size:13px}
+.fab{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));
+  background:#1e40af;color:#fff;border:none;border-radius:999px;padding:15px 26px;font-size:17px;font-weight:800;
+  box-shadow:0 6px 18px rgba(30,64,175,.35);font-family:inherit;z-index:6}
+.menu-btn{background:rgba(255,255,255,.18);color:#fff;border:none;border-radius:8px;padding:7px 10px;font-size:13px;
+  font-family:inherit;font-weight:600}
+.overlay{position:fixed;inset:0;background:#0f172a;z-index:20;display:none;flex-direction:column}
+.overlay.show{display:flex}
+.ov-top{display:flex;align-items:center;padding:12px 16px;padding-top:calc(12px + env(safe-area-inset-top));color:#fff;gap:10px}
+.ov-top b{flex:1;font-size:17px}
+.ov-close{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:15px;font-family:inherit}
+.cam{flex:1;position:relative;overflow:hidden}
+.cam video{width:100%;height:100%;object-fit:cover}
+.cam .frame{position:absolute;left:50%;top:50%;width:62vmin;height:62vmin;transform:translate(-50%,-50%);
+  border:3px solid rgba(255,255,255,.85);border-radius:18px;box-shadow:0 0 0 9999px rgba(0,0,0,.35)}
+.cam-msg{color:#fff;text-align:center;padding:14px;font-size:15px;padding-bottom:calc(14px + env(safe-area-inset-bottom))}
+.scan-log{position:absolute;left:12px;right:12px;bottom:12px;display:flex;flex-direction:column;gap:6px}
+.scan-log div{background:rgba(255,255,255,.95);border-radius:10px;padding:10px 12px;font-weight:700;font-size:15px}
+.scan-log .ok{color:#15803d}.scan-log .dup{color:#92400e}.scan-log .bad{color:#b91c1c}
+#print{background:#fff;overflow:auto}
+#print .ov-top{background:#1e40af}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px;padding:16px}
+.card{border:1px solid #cbd5e1;border-radius:10px;padding:10px;text-align:center;break-inside:avoid}
+.card .qr{display:flex;justify-content:center;margin-bottom:6px}
+.card .qr img,.card .qr canvas{width:120px!important;height:120px!important}
+.card b{display:block;font-size:15px}
+.card span{font-size:12px;color:#64748b}
+.toast{position:fixed;left:50%;top:calc(96px + env(safe-area-inset-top));transform:translateX(-50%);background:#1e293b;
+  color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;z-index:30;display:none;max-width:90vw}
+.toast.show{display:block}
+#login{position:fixed;inset:0;z-index:40;background:#1e40af;display:none;flex-direction:column;align-items:center;
+  justify-content:center;padding:24px;color:#fff}
+#login.show{display:flex}
+#login h2{font-size:24px;font-weight:800;margin-bottom:6px}
+#login p{font-size:14px;opacity:.85;margin-bottom:22px;text-align:center;line-height:1.6}
+#login input{width:100%;max-width:300px;border:none;border-radius:12px;padding:14px;font-size:18px;margin-bottom:10px;
+  font-family:inherit;text-align:center}
+#login button{width:100%;max-width:300px;border:none;border-radius:12px;padding:14px;font-size:17px;font-weight:800;
+  background:#facc15;color:#1e293b;font-family:inherit}
+#loginMsg{min-height:22px;margin-top:12px;font-size:14px;color:#fde68a;text-align:center}
+.fabs{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));display:flex;gap:10px;z-index:6}
+.fabs button{background:#1e40af;color:#fff;border:none;border-radius:999px;padding:15px 22px;font-size:17px;font-weight:800;
+  box-shadow:0 6px 18px rgba(30,64,175,.35);font-family:inherit;white-space:nowrap}
+.mirror{transform:scaleX(-1)}
+.guide{position:absolute;left:50%;top:50%;width:56vmin;height:56vmin;transform:translate(-50%,-50%);border-radius:50%;
+  border:6px solid rgba(255,255,255,.9);box-shadow:0 0 0 9999px rgba(15,23,42,.45);pointer-events:none}
+.face-hit{position:absolute;left:50%;top:18px;transform:translateX(-50%);background:#22c55e;color:#fff;border-radius:16px;
+  padding:14px 26px;font-size:26px;font-weight:800;display:none;box-shadow:0 8px 24px rgba(0,0,0,.3);white-space:nowrap}
+.face-hit.show{display:block}
+.cands{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:0 12px 12px}
+.cands button{background:#fff;border:none;border-radius:12px;padding:12px 16px;font-size:17px;font-weight:700;font-family:inherit}
+.cands button.no{background:rgba(255,255,255,.2);color:#fff}
+#regOv{background:#0f172a}
+.reg{padding:12px 16px;display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
+.reg select{padding:12px;border-radius:10px;border:none;font-size:17px;font-family:inherit}
+.reg .cam{flex:1;min-height:200px;border-radius:12px}
+.reg-btns{display:flex;gap:8px;flex-wrap:wrap}
+.reg-btns button,.reg-btns label{flex:1;text-align:center;background:#facc15;color:#1e293b;border:none;border-radius:12px;padding:13px;
+  font-size:16px;font-weight:800;font-family:inherit;cursor:pointer}
+.reg-btns .ghost{background:rgba(255,255,255,.18);color:#fff}
+.p .fc{font-size:10px;color:#94a3b8;margin-left:2px}
+@media print{
+  body{padding:0;background:#fff}
+  body>*:not(#print){display:none!important}
+  #print{position:static;display:block!important;overflow:visible}
+  #print .ov-top{display:none}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hrow">
+    <h1>유년1부 출석</h1>
+    <select id="date"></select>
+    <button class="menu-btn" onclick="openPrint()">QR 카드</button>
+    <button class="menu-btn" onclick="openReg()">얼굴 등록</button>
+    <button class="menu-btn" onclick="logout()">나가기</button>
+  </div>
+  <div class="sum" id="sum">불러오는 중…</div>
+</header>
+<div class="chips" id="chips"></div>
+<div id="warn"></div>
+<div class="list" id="list"></div>
+
+<div class="fabs">
+  <button onclick="openScan()">📷 QR(폰)</button>
+  <button onclick="openFace()">🟢 아이패드 출석</button>
+</div>
+
+<div class="overlay" id="faceOv">
+  <div class="ov-top"><b>아이패드 출석 (얼굴·QR)</b><button class="ov-close" onclick="closeFace()">닫기</button></div>
+  <div class="cam">
+    <video id="fvideo" class="mirror" playsinline muted></video>
+    <div class="guide"></div>
+    <div class="face-hit" id="faceHit"></div>
+    <div class="scan-log" id="faceLog"></div>
+  </div>
+  <div class="cam-msg" id="faceMsg">준비 중…</div>
+  <div class="cands" id="faceCands"></div>
+</div>
+
+<div class="overlay" id="regOv">
+  <div class="ov-top"><b>얼굴 등록</b><button class="ov-close" onclick="closeReg()">닫기</button></div>
+  <div class="reg">
+    <select id="regWho"></select>
+    <div class="cam"><video id="rvideo" class="mirror" playsinline muted></video></div>
+    <div class="reg-btns">
+      <button onclick="regShot()">📸 찍어서 등록</button>
+      <label>🖼 사진 올리기<input type="file" id="regFile" accept="image/*" multiple hidden></label>
+      <button class="ghost" onclick="regClear()">이 아이 얼굴 지우기</button>
+    </div>
+    <div class="cam-msg" id="regMsg">아이를 고르고, 얼굴이 정면으로 크게 나오게 찍어 주세요. 한 아이당 3~5장이면 좋아요.</div>
+  </div>
+</div>
+
+<div class="overlay" id="scan">
+  <div class="ov-top"><b>QR 스캔</b><button class="ov-close" onclick="closeScan()">닫기</button></div>
+  <div class="cam">
+    <video id="video" playsinline muted></video>
+    <div class="frame"></div>
+    <div class="scan-log" id="scanLog"></div>
+  </div>
+  <div class="cam-msg" id="camMsg">아이 QR 카드를 네모 안에 비춰 주세요</div>
+  <canvas id="canvas" style="display:none"></canvas>
+</div>
+
+<div class="overlay" id="print">
+  <div class="ov-top"><b id="printTitle">QR 카드</b>
+    <button class="ov-close" onclick="window.print()">인쇄</button>
+    <button class="ov-close" onclick="closePrint()">닫기</button></div>
+  <div class="cards" id="cards"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div id="login">
+  <h2>유년1부 출석</h2>
+  <p>교사 명단에 있는 선생님만 들어올 수 있어요.<br>처음이면 쓰고 싶은 숫자 4자리가 PIN이 돼요.</p>
+  <input id="lgName" placeholder="이름" autocomplete="name">
+  <input id="lgPin" placeholder="PIN 숫자 4자리" type="password" inputmode="numeric" maxlength="4" autocomplete="off">
+  <button onclick="doLogin()">들어가기</button>
+  <div id="loginMsg"></div>
+</div>
+
+<script>
+// Netlify에서 이 화면을 바로 띄울 때만 google.script.run 대체품을 만들어 서버 doPost로 보냅니다(회계 어플과 같은 방식).
+// 배포한 뒤 API_URL에 웹앱 exec 주소를 넣어야 Netlify에서 작동합니다.
+(function () {
+  if (window.google && google.script && google.script.run) return;
+  var API_URL = 'https://script.google.com/macros/s/AKfycbz-i1FU2CI2Ye-_7yAhEtBmzYpNr1MdIocQ8Q3vW_NoORNmyjobj0zKB59PJ3FMdIJF/exec';
+  var FNS = ['login', 'getBoot', 'setCheck', 'checkByQr', 'getFaces', 'addFace', 'clearFaces'];
+  function runner(ok, fail) {
+    var r = {
+      withSuccessHandler: function (f) { return runner(f, fail); },
+      withFailureHandler: function (f) { return runner(ok, f); }
+    };
+    FNS.forEach(function (name) {
+      r[name] = function () {
+        var args = Array.prototype.slice.call(arguments);
+        fetch(API_URL, { method: 'POST', redirect: 'follow',
+                         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                         body: JSON.stringify({ fn: name, args: args }) })
+          .then(function (res) { return res.json(); })
+          .then(function (o) { if (!o || !o.ok) throw new Error((o && o.err) || '서버 오류'); return o.r; })
+          .then(function (v) { if (ok) ok(v); }, function (e) { if (fail) fail(e); });
+      };
+    });
+    return r;
+  }
+  window.google = window.google || {};
+  google.script = { run: runner(null, null) };
+})();
+
+var S = { date: '', dates: [], people: [], checked: {}, absent: [], team: '', auth: null };
+try { S.team = localStorage.getItem('att_team') || ''; } catch (e) {}
+try { S.auth = JSON.parse(localStorage.getItem('att_auth') || 'null'); } catch (e) {}
+
+function $(id) { return document.getElementById(id); }
+function el(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text != null) e.textContent = text;
+  return e;
+}
+function toast(msg, ms) {
+  var t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._h);
+  t._h = setTimeout(function () { t.classList.remove('show'); }, ms || 2200);
+}
+// 모든 서버 기능은 첫 인자로 로그인 정보를 받습니다. 로그인 문제면 로그인 화면으로 돌아갑니다.
+function call(fn, args, ok, fail) {
+  var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) {
+    var msg = ((e && e.message) || String(e)).replace(/^Error:\s*/, '');
+    if (/로그인|PIN|교사 명단/.test(msg)) showLogin(msg);
+    else toast('⚠️ ' + msg);
+    if (fail) fail(e);
+  });
+  r[fn].apply(r, [S.auth].concat(args));
+}
+
+function showLogin(msg) {
+  $('login').classList.add('show');
+  $('loginMsg').textContent = msg || '';
+  if (S.auth) $('lgName').value = S.auth.name;
+}
+
+function doLogin() {
+  var auth = { name: $('lgName').value.replace(/\s+/g, ''), pin: $('lgPin').value.trim() };
+  if (!auth.name || !/^\d{4}$/.test(auth.pin)) { $('loginMsg').textContent = '이름과 숫자 4자리를 넣어 주세요'; return; }
+  $('loginMsg').textContent = '확인 중…';
+  S.auth = auth;
+  call('login', [], function (r) {
+    try { localStorage.setItem('att_auth', JSON.stringify(auth)); } catch (e) {}
+    $('login').classList.remove('show');
+    $('lgPin').value = '';
+    toast(r.name + ' 선생님 환영해요');
+    load('');
+  });
+}
+
+function logout() {
+  try { localStorage.removeItem('att_auth'); } catch (e) {}
+  S.auth = null;
+  $('lgPin').value = '';
+  showLogin('');
+}
+
+// 조 이름을 "1조, 2조, 10조" 순서로(글자 순서면 10조가 2조 앞에 옴), 미배정은 맨 뒤
+function teamSort(a, b) {
+  if (a === b) return 0;
+  if (a === '미배정') return 1;
+  if (b === '미배정') return -1;
+  return a.localeCompare(b, 'ko', { numeric: true });
+}
+function teams() {
+  var seen = {};
+  S.people.forEach(function (p) { seen[p.jo] = true; });
+  return Object.keys(seen).sort(teamSort);
+}
+
+function load(date) {
+  $('sum').textContent = '불러오는 중…';
+  call('getBoot', [date || ''], function (d) {
+    S.date = d.date;
+    S.dates = d.dates;
+    S.people = d.people;
+    S.checked = d.checked;
+    S.absent = d.absent || [];
+    S.faces = d.faces || {};
+    var sel = $('date');
+    sel.innerHTML = '';
+    d.dates.forEach(function (x) {
+      var o = el('option', '', x.label);
+      o.value = x.md;
+      sel.appendChild(o);
+    });
+    sel.value = d.date;
+    $('warn').innerHTML = '';
+    if (!d.dates.length) {
+      $('warn').appendChild(el('div', 'warn', '출석부 탭에 날짜 칸이 없어요. 시트에 그 주 날짜와 "출석" 칸을 먼저 만들어 주세요.'));
+    }
+    if (d.dups && d.dups.length) {
+      $('warn').appendChild(el('div', 'warn', '명단에 같은 이름이 있어요: ' + d.dups.join(', ') +
+        ' — 시트에서 "김하늘A"처럼 구분해 주세요(지금은 첫 번째 사람에게만 체크돼요).'));
+    }
+    if (S.team && S.team !== '전체' && teams().indexOf(S.team) < 0) S.team = '';
+    render();
+  });
+}
+
+function render() {
+  var ts = teams();
+  var cur = S.team || '전체';
+  var chips = $('chips');
+  chips.innerHTML = '';
+  ['전체'].concat(ts).forEach(function (t) {
+    var members = S.people.filter(function (p) { return t === '전체' || p.jo === t; });
+    var done = members.filter(function (p) { return S.checked[p.name]; }).length;
+    var c = el('button', 'chip' + (cur === t ? ' on' : ''), t);
+    c.appendChild(el('small', '', done + '/' + members.length));
+    c.onclick = function () {
+      S.team = t;
+      try { localStorage.setItem('att_team', t); } catch (e) {}
+      render();
+    };
+    chips.appendChild(c);
+  });
+
+  var kids = S.people.filter(function (p) { return !p.teacher; });
+  var kidsDone = kids.filter(function (p) { return S.checked[p.name]; }).length;
+  var tch = S.people.length - kids.length;
+  var tchDone = S.people.filter(function (p) { return p.teacher && S.checked[p.name]; }).length;
+  $('sum').textContent = (S.date || '날짜 없음') + ' · 아이 ' + kidsDone + '/' + kids.length +
+    (tch ? ' · 교사 ' + tchDone + '/' + tch : '');
+
+  var list = $('list');
+  list.innerHTML = '';
+  if (!S.people.length) {
+    var e = el('div', 'empty');
+    e.innerHTML = '출석부에 이름이 없어요.<br>구글 시트 <b>출석부</b> 탭의 이름 칸에 아이들을 적어 주세요.<br>' +
+      '(제목줄에 "소속" 칸을 만들어 "송림"이라 적으면 표시돼요)';
+    list.appendChild(e);
+    return;
+  }
+  var show = cur !== '전체' ? [cur] : ts;
+  show.forEach(function (t) {
+    if (show.length > 1) list.appendChild(el('div', 'team-title', t));
+    S.people.filter(function (p) { return p.jo === t; })
+      .sort(function (a, b) { return (b.teacher - a.teacher) || a.name.localeCompare(b.name, 'ko'); })
+      .forEach(function (p) { list.appendChild(personBtn(p)); });
+  });
+}
+
+function personBtn(p) {
+  var on = !!S.checked[p.name];
+  var b = el('button', 'p' + (on ? ' on' : ''));
+  b.appendChild(el('span', 'box', on ? '✓' : ''));
+  b.appendChild(el('span', '', p.name));
+  if (on && S.checked[p.name] !== '…') b.appendChild(el('span', 'time', S.checked[p.name]));
+  if (!on && S.absent.indexOf(p.name) >= 0) b.appendChild(el('span', 'tag ab', '결석'));
+  else if (p.teacher) b.appendChild(el('span', 'tag t', '교사'));
+  else if (p.sosok) b.appendChild(el('span', 'tag', p.sosok));
+  b.onclick = function () { toggle(p); };
+  return b;
+}
+
+// 누르는 즉시 화면부터 바꾸고(빠르게), 서버가 실패하면 원래대로 되돌립니다.
+function toggle(p) {
+  if (!S.date) { toast('출석부에 날짜 칸이 없어요'); return; }
+  var before = S.checked[p.name];
+  var want = !before;
+  if (want) S.checked[p.name] = '…'; else delete S.checked[p.name];
+  render();
+  call('setCheck', [S.date, p.name, want], function (r) {
+    if (r.on) S.checked[p.name] = r.time; else delete S.checked[p.name];
+    render();
+  }, function () {
+    if (before) S.checked[p.name] = before; else delete S.checked[p.name];
+    render();
+  });
+}
+
+$('date').addEventListener('change', function () { if (this.value) load(this.value); });
+
+// ── QR 스캔 ─────────────────────────────────────────────
+var scan = { stream: null, busy: false, last: '', lastAt: 0, raf: 0 };
+
+function loadScript(src) {
+  return new Promise(function (ok, fail) {
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = ok;
+    s.onerror = function () { fail(new Error('라이브러리를 못 불러왔어요(인터넷 확인)')); };
+    document.head.appendChild(s);
+  });
+}
+
+function openScan() {
+  $('scan').classList.add('show');
+  $('scanLog').innerHTML = '';
+  $('camMsg').textContent = '카메라 켜는 중…';
+  var need = window.jsQR ? Promise.resolve() : loadScript('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js');
+  need.then(function () {
+    return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+  }).then(function (st) {
+    scan.stream = st;
+    var v = $('video');
+    v.srcObject = st;
+    v.play();
+    $('camMsg').textContent = '아이 QR 카드를 네모 안에 비춰 주세요';
+    scan.raf = requestAnimationFrame(tick);
+  }).catch(function (e) {
+    $('camMsg').textContent = '카메라를 못 켰어요: ' + (e.message || e) +
+      ' — 홈 화면 아이콘(Netlify 주소)으로 열었는지, 카메라 권한을 허용했는지 확인해 주세요.';
+  });
+}
+
+function closeScan() {
+  cancelAnimationFrame(scan.raf);
+  if (scan.stream) scan.stream.getTracks().forEach(function (t) { t.stop(); });
+  scan.stream = null;
+  $('scan').classList.remove('show');
+}
+
+function tick() {
+  var v = $('video');
+  if (v.readyState === v.HAVE_ENOUGH_DATA && !scan.busy && v.videoWidth) {
+    var c = $('canvas'), ctx = c.getContext('2d', { willReadFrequently: true });
+    var w = 480, h = Math.round(v.videoHeight * 480 / v.videoWidth);
+    c.width = w;
+    c.height = h;
+    ctx.drawImage(v, 0, 0, w, h);
+    var code = jsQR(ctx.getImageData(0, 0, w, h).data, w, h, { inversionAttempts: 'dontInvert' });
+    // 같은 카드를 계속 비추고 있어도 3초에 한 번만 보냄
+    if (code && code.data && !(code.data === scan.last && Date.now() - scan.lastAt < 3000)) {
+      scan.last = code.data;
+      scan.lastAt = Date.now();
+      scan.busy = true;
+      if (navigator.vibrate) navigator.vibrate(60);
+      call('checkByQr', [S.date, code.data], function (r) {
+        scan.busy = false;
+        S.checked[r.name] = r.time;
+        render();
+        logScan(r.already ? 'dup' : 'ok', (r.already ? '이미 체크됨 · ' : '✓ ') + r.name + ' (' + r.jo + ')');
+      }, function (e) {
+        scan.busy = false;
+        logScan('bad', '✗ ' + ((e && e.message) || e));
+      });
+    }
+  }
+  scan.raf = requestAnimationFrame(tick);
+}
+
+function logScan(kind, text) {
+  var box = $('scanLog');
+  box.insertBefore(el('div', kind, text), box.firstChild);
+  while (box.children.length > 3) box.removeChild(box.lastChild);
+}
+
+// ── QR 카드 인쇄 (지금 고른 조만, "전체"면 모두) ─────────────
+function openPrint() {
+  if (!S.people.length) { toast('명단이 비어 있어요'); return; }
+  $('print').classList.add('show');
+  var t = (S.team && S.team !== '전체') ? S.team : '';
+  $('printTitle').textContent = 'QR 카드 · ' + (t || '전체');
+  var need = window.QRCode ? Promise.resolve() :
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js');
+  need.then(function () {
+    var box = $('cards');
+    box.innerHTML = '';
+    S.people.filter(function (p) { return !p.teacher && (!t || p.jo === t); })
+      .sort(function (a, b) { return teamSort(a.jo, b.jo) || a.name.localeCompare(b.name, 'ko'); })
+      .forEach(function (p) {
+        var card = el('div', 'card');
+        var q = el('div', 'qr');
+        card.appendChild(q);
+        card.appendChild(el('b', '', p.name));
+        card.appendChild(el('span', '', p.jo + (p.sosok ? ' · ' + p.sosok : '')));
+        box.appendChild(card);
+        new QRCode(q, { text: p.qr, width: 240, height: 240, correctLevel: QRCode.CorrectLevel.M });
+      });
+  }).catch(function (e) { toast('⚠️ ' + e.message); });
+}
+function closePrint() { $('print').classList.remove('show'); }
+
+// ── 얼굴 (아이패드 세워 두고) ────────────────────────────────
+// 엔진(face.js)과 모델은 Netlify 주소에 같이 올린 파일을 씀. 구글 주소 안에서는 카메라가 막혀 안 됨.
+var FACE = { db: {}, stream: null, timer: 0, busy: false, recent: {}, misses: 0, pauseUntil: 0 };
+var Q_SCALE = 500;       // 특징값(최대 약 0.18)을 1바이트로 줄일 때 곱하는 수
+var AUTO_SIM = 0.50;     // 이 이상이고 2등과 차이가 크면 바로 출석(검증: 같은 아이 최저 0.48, 다른 아이 최고 0.44)
+var AUTO_GAP = 0.08;     // 미만이면 멋대로 체크하지 않고 "QR 카드를 대 주세요" 안내
+
+function ensureEngine() {
+  var need = window.FaceEngine ? Promise.resolve() : loadScript('face.js');
+  return need.then(function () { return FaceEngine.load('models/'); })
+    .catch(function (e) {
+      throw new Error('얼굴 인식 엔진을 못 불러왔어요. 홈 화면 앱(Netlify 주소)으로 열었는지 확인해 주세요. (' + ((e && e.message) || e) + ')');
+    });
+}
+
+function encodeEmb(e) {
+  var b = new Int8Array(e.length);
+  for (var i = 0; i < e.length; i++) b[i] = Math.max(-127, Math.min(127, Math.round(e[i] * Q_SCALE)));
+  var s = '', u = new Uint8Array(b.buffer);
+  for (var j = 0; j < u.length; j++) s += String.fromCharCode(u[j]);
+  return btoa(s);
+}
+function decodeEmb(code) {
+  var s = atob(code), b = new Int8Array(s.length), n = 0;
+  for (var i = 0; i < s.length; i++) b[i] = (s.charCodeAt(i) << 24) >> 24;
+  var v = new Float32Array(b.length);
+  for (var j = 0; j < b.length; j++) { v[j] = b[j] / Q_SCALE; n += v[j] * v[j]; }
+  n = Math.sqrt(n);
+  for (var k = 0; k < v.length; k++) v[k] /= n;
+  return v;
+}
+
+// 사람마다 등록 사진들 중 가장 비슷한 값으로 줄 세움
+function rankFaces(emb) {
+  var out = [];
+  Object.keys(FACE.db).forEach(function (name) {
+    var best = -1;
+    FACE.db[name].forEach(function (ref) { var s = FaceEngine.cosine(emb, ref); if (s > best) best = s; });
+    out.push({ name: name, sim: best });
+  });
+  return out.sort(function (a, b) { return b.sim - a.sim; });
+}
+
+function startCam(video) {
+  return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 } }, audio: false })
+    .then(function (st) { video.srcObject = st; return video.play().then(function () { return st; }); });
+}
+function stopCam(st) { if (st) st.getTracks().forEach(function (t) { t.stop(); }); }
+
+function personOf(name) { return S.people.filter(function (p) { return p.name === name; })[0] || { jo: '' }; }
+
+// ── 아이패드 출석: 카메라 하나로 QR 카드와 얼굴을 동시에 보고, 알아보면 "띡" + 바로 기록 (누를 것 없음) ──
+// 얼굴이 애매하면 멋대로 체크하지 않고 "QR 카드를 대 주세요"라고 안내 → QR이 얼굴의 보조.
+function openFace() {
+  if (!S.date) { toast('출석부에 날짜 칸이 없어요'); return; }
+  beep(null);   // 아이패드는 손가락으로 누른 순간에만 소리 권한을 줌 → 여기서 미리 열어 둠
+  say('출석을 준비하고 있어요', true);   // 음성도 마찬가지로 이 순간에 열어 둠
+  $('faceOv').classList.add('show');
+  $('faceCands').innerHTML = '';
+  $('faceLog').innerHTML = '';
+  $('faceMsg').textContent = '출석 준비 중… (처음 한 번은 1~2분 걸릴 수 있어요)';
+  var qrLib = window.jsQR ? Promise.resolve() : loadScript('https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js');
+  Promise.all([ensureEngine(), qrLib]).then(function () {
+    return new Promise(function (ok, fail) { call('getFaces', [], ok, fail); });
+  }).then(function (faces) {
+    FACE.db = {};
+    Object.keys(faces).forEach(function (n) { FACE.db[n] = faces[n].map(decodeEmb); });
+    return startCam($('fvideo'));
+  }).then(function (st) {
+    FACE.stream = st;
+    if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (l) { FACE.wake = l; }).catch(function () {});
+    idleMsg();
+    FACE.timer = setInterval(faceTick, 300);
+  }).catch(function (e) { $('faceMsg').textContent = '⚠️ ' + ((e && e.message) || e); });
+}
+
+function idleMsg() {
+  $('faceMsg').textContent = S.date + ' 출석 · 얼굴을 원 안에 맞추거나 QR 카드를 대 주세요 (얼굴 ' + Object.keys(FACE.db).length + '명 등록됨)';
+}
+
+// ── 음성 안내 (아이패드 사파리 기본 한국어 음성, 무료·설치 없음) ──
+// 같은 말은 5초 안에 반복 안 함, 말하는 중엔 끼어들지 않음. force(확인 안내)만 하던 말을 끊고 바로 말함.
+var SAY = { last: '', at: 0, unsure: 0, lastFaceAt: 0 };
+function say(text, force) {
+  $('faceMsg').textContent = text;
+  var ss = window.speechSynthesis;
+  if (!ss) return;
+  if (!force && ((SAY.last === text && Date.now() - SAY.at < 5000) || ss.speaking)) return;
+  if (force) ss.cancel();
+  var u = new SpeechSynthesisUtterance(text);
+  u.lang = 'ko-KR'; u.rate = 1.05;
+  var ko = ss.getVoices().filter(function (v) { return /^ko/i.test(v.lang); })[0];
+  if (ko) u.voice = ko;
+  ss.speak(u);
+  SAY.last = text; SAY.at = Date.now();
+}
+
+function closeFace() {
+  clearInterval(FACE.timer);
+  stopCam(FACE.stream);
+  FACE.stream = null;
+  if (FACE.wake) { FACE.wake.release().catch(function () {}); FACE.wake = null; }
+  $('faceOv').classList.remove('show');
+}
+
+function faceTick() {
+  var v = $('fvideo');
+  if (FACE.busy || Date.now() < FACE.pauseUntil || !v.videoWidth) return;
+  FACE.busy = true;
+  kioskFrame(v, v.videoWidth, v.videoHeight)
+    .catch(function (e) { faceLog('bad', (e && e.message) || e); })
+    .then(function () { FACE.busy = false; });
+}
+
+// 한 장면 처리: 1) QR 카드 먼저(빠름) 2) 없으면 얼굴. 무엇을 했는지 돌려줌(시험용).
+function kioskFrame(src, w, h) {
+  var c = kioskFrame.c || (kioskFrame.c = document.createElement('canvas'));
+  var cw = 480, ch = Math.round(h * 480 / w);
+  c.width = cw; c.height = ch;
+  var ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(src, 0, 0, cw, ch);
+  var code = window.jsQR && jsQR(ctx.getImageData(0, 0, cw, ch).data, cw, ch, { inversionAttempts: 'dontInvert' });
+  if (code && code.data) return qrCheck(code.data);
+  if (!Object.keys(FACE.db).length) return Promise.resolve('no-db');
+  return FaceEngine.describe(src, w, h, 320).then(function (r) {
+    if (!r) {
+      if (Date.now() - SAY.lastFaceAt > 3000) SAY.unsure = 0;   // 아이가 떠났으면 안내 단계 처음부터
+      return 'no-face';
+    }
+    SAY.lastFaceAt = Date.now();
+    // 원 안(화면 가운데)에 충분히 크게 들어온 얼굴만 알아봄 — 지나가는 다른 아이를 잡지 않게
+    var b = r.face.box, m = Math.min(w, h);
+    var dx = ((b[0] + b[2]) / 2 - w / 2) / m, dy = ((b[1] + b[3]) / 2 - h / 2) / m, size = (b[2] - b[0]) / m;
+    if (Math.abs(dx) > 0.18 || Math.abs(dy) > 0.2 || size < 0.16) { say('얼굴을 원 안에 맞춰 주세요'); return 'off-center'; }
+    var rank = rankFaces(r.embedding), top = rank[0], gap = top.sim - (rank[1] ? rank[1].sim : 0);
+    if (top.sim >= AUTO_SIM && gap >= AUTO_GAP) return faceCheck(top.name).then(function () { return 'face:' + top.name; });
+    SAY.unsure++;
+    if (SAY.unsure === 3) say('다시 한번 얼굴을 맞춰 주세요');
+    else if (SAY.unsure >= 7 && SAY.unsure % 7 === 0) say('QR코드를 카메라 앞에 보여 주세요');
+    return 'unsure:' + top.name + ':' + top.sim.toFixed(3);
+  });
+}
+
+// 같은 아이가 1분 안에 또 잡히면 조용히 넘어감(띡 두 번 방지)
+function recentlyDone(name) { return FACE.recent[name] && Date.now() - FACE.recent[name] < 60000; }
+
+function qrCheck(token) {
+  if (FACE.lastQr === token && Date.now() - FACE.lastQrAt < 60000) return Promise.resolve('qr-repeat');
+  FACE.lastQr = token; FACE.lastQrAt = Date.now();
+  FACE.pauseUntil = Date.now() + 1500;
+  return new Promise(function (ok) {
+    call('checkByQr', [S.date, token], function (r) {
+      FACE.recent[r.name] = Date.now();
+      done(r); ok('qr:' + r.name);
+    }, function () { beep(false); say('등록되지 않은 QR코드예요', true); ok('qr-bad'); });
+  });
+}
+
+function faceCheck(name) {
+  SAY.unsure = 0;
+  if (recentlyDone(name)) return Promise.resolve();
+  FACE.recent[name] = Date.now();
+  FACE.pauseUntil = Date.now() + 1500;
+  return new Promise(function (ok) {
+    call('setCheck', [S.date, name, true], function (r) { done(r); ok(); },
+      function () { delete FACE.recent[name]; ok(); });
+  });
+}
+
+function done(r) {
+  S.checked[r.name] = r.time; render();
+  SAY.unsure = 0;
+  beep(!r.already);
+  say(r.already ? r.name + ', 이미 출석했어요' : r.name + ' 확인되었습니다', true);
+  faceHit((r.already ? '이미 출석 · ' : '✓ ') + r.name + (r.already ? '' : ' ' + r.time), r.already ? '#f59e0b' : '#22c55e');
+}
+
+// "띡" 소리: ok=true 높은 음, false 낮은 음, null이면 소리 권한만 열어 둠
+function beep(ok) {
+  try {
+    var AC = beep.ac || (beep.ac = new (window.AudioContext || window.webkitAudioContext)());
+    if (AC.state === 'suspended') AC.resume();
+    if (ok === null) return;
+    var o = AC.createOscillator(), g = AC.createGain(), t = AC.currentTime;
+    o.frequency.value = ok ? 1480 : 520;
+    o.connect(g); g.connect(AC.destination);
+    g.gain.setValueAtTime(0.3, t); g.gain.exponentialRampToValueAtTime(0.001, t + 0.16);
+    o.start(t); o.stop(t + 0.18);
+  } catch (e) { /* 소리가 안 나도 출석 기록엔 지장 없음 */ }
+}
+
+function faceHit(text, color) {
+  var h = $('faceHit');
+  h.textContent = text; h.style.background = color; h.classList.add('show');
+  clearTimeout(h._t); h._t = setTimeout(function () { h.classList.remove('show'); idleMsg(); }, 2000);
+  faceLog(color === '#22c55e' ? 'ok' : 'dup', text);
+}
+function faceLog(kind, text) {
+  var box = $('faceLog');
+  box.insertBefore(el('div', kind, text), box.firstChild);
+  while (box.children.length > 3) box.removeChild(box.lastChild);
+}
+
+// ── 얼굴 등록 ────────────────────────────────────────────
+var REG = { stream: null };
+function openReg() {
+  if (!S.people.length) { toast('출석부에 이름이 없어요'); return; }
+  $('regOv').classList.add('show');
+  fillRegWho();
+  $('regMsg').textContent = '얼굴 인식 준비 중…';
+  ensureEngine().then(function () { return startCam($('rvideo')); }).then(function (st) {
+    REG.stream = st;
+    $('regMsg').textContent = '아이를 고르고, 얼굴이 정면으로 크게 나오게 찍어 주세요. 한 아이당 3~5장이면 좋아요.';
+  }).catch(function (e) { $('regMsg').textContent = '⚠️ ' + ((e && e.message) || e); });
+}
+function closeReg() { stopCam(REG.stream); REG.stream = null; $('regOv').classList.remove('show'); render(); }
+
+function fillRegWho() {
+  var sel = $('regWho'), keep = sel.value;
+  sel.innerHTML = '';
+  teams().forEach(function (t) {
+    var g = document.createElement('optgroup'); g.label = t;
+    S.people.filter(function (p) { return p.jo === t && !p.teacher; }).forEach(function (p) {
+      var o = el('option', '', p.name + ' · ' + ((S.faces || {})[p.name] || 0) + '장');
+      o.value = p.name; g.appendChild(o);
+    });
+    sel.appendChild(g);
+  });
+  if (keep) sel.value = keep;
+}
+
+function regSave(src, w, h, forName) {
+  var name = forName || $('regWho').value;
+  return FaceEngine.describe(src, w, h, 640).then(function (r) {
+    if (!r) throw new Error('얼굴을 못 찾았어요. 더 가까이, 정면으로 찍어 주세요');
+    return new Promise(function (ok, fail) { call('addFace', [name, encodeEmb(r.embedding)], ok, fail); });
+  }).then(function (res) {
+    S.faces = S.faces || {}; S.faces[res.name] = res.count;
+    fillRegWho();
+    $('regMsg').textContent = '✓ ' + res.name + ' 얼굴 ' + res.count + '장 등록됨';
+  });
+}
+
+function regShot() {
+  var v = $('rvideo');
+  if (!v.videoWidth) return;
+  $('regMsg').textContent = '확인 중…';
+  regSave(v, v.videoWidth, v.videoHeight).catch(function (e) { $('regMsg').textContent = '⚠️ ' + ((e && e.message) || e); });
+}
+
+// 파일 이름이 아이 이름이면(김하늘.jpg, 김하늘_2.jpg, 김하늘 (3).jpg) 그 아이에게, 아니면 위에서 고른 아이에게 등록
+function nameFromFile(fname) {
+  var base = fname.replace(/\.[^.]+$/, '').replace(/\s+/g, '');
+  // 이름 자체가 숫자로 끝날 수 있어(김하늘2) 그대로 먼저 맞춰 보고, 없을 때만 뒤 번호를 뗌
+  var tries = [base, base.replace(/[_\-]*\(?\d+\)?$/, '')];
+  for (var i = 0; i < tries.length; i++) {
+    if (S.people.some(function (p) { return p.name === tries[i]; })) return tries[i];
+  }
+  return '';
+}
+
+$('regFile').addEventListener('change', function () {
+  var files = Array.prototype.slice.call(this.files);
+  this.value = '';
+  var chain = ensureEngine(), okN = 0, bad = [];
+  files.forEach(function (f, i) {
+    chain = chain.then(function () {
+      var who = nameFromFile(f.name);
+      $('regMsg').textContent = '사진 ' + (i + 1) + '/' + files.length + ' 확인 중… ' + (who || $('regWho').value);
+      return createImageBitmap(f).then(function (bmp) { return regSave(bmp, bmp.width, bmp.height, who); });
+    }).then(function () { okN++; }, function (e) { bad.push(f.name + ': ' + ((e && e.message) || e)); });
+  });
+  chain.then(function () {
+    $('regMsg').textContent = '사진 ' + files.length + '장 중 ' + okN + '장 등록' + (bad.length ? ' · 실패 ' + bad.length + '장 — ' + bad.join(' / ') : '');
+  });
+});
+
+function regClear() {
+  var name = $('regWho').value;
+  if (!name || !confirm(name + ' 얼굴 등록을 모두 지울까요?')) return;
+  call('clearFaces', [name], function (r) {
+    S.faces = S.faces || {}; delete S.faces[r.name];
+    fillRegWho();
+    $('regMsg').textContent = r.name + ' 얼굴 ' + r.removed + '장 지움';
+  });
+}
+
+$('lgPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
+if (S.auth) load(''); else showLogin('');
+</script>
+</body>
+</html>
