@@ -1185,12 +1185,37 @@ function idleMsg() {
 // ── 음성 안내 (아이패드 사파리 기본 한국어 음성, 무료·설치 없음) ──
 // 같은 말은 5초 안에 반복 안 함, 말하는 중엔 끼어들지 않음. force(확인 안내)만 하던 말을 끊고 바로 말함.
 var SAY = { last: '', at: 0, unsure: 0, lastFaceAt: 0 };
+// 녹음해 둔 목소리(제미나이 TTS · Laomedeia, 홈화면앱/voice/)가 있으면 그걸 틀고, 없으면 기기 목소리로 읽음.
+// 목록 voice/list.json = { fixed: {키: 파일}, names: {이름: 파일} } — 만드는 법은 음성만들기.js
+var VOICE = { list: null, el: null };
+var VOICE_FIXED = { '출석을 준비하고 있어요': 'ready', '얼굴을 원 안에 맞춰 주세요': 'center', '다시 한번 얼굴을 맞춰 주세요': 'again',
+  'QR코드를 카메라 앞에 보여 주세요': 'qr', '등록되지 않은 QR코드예요': 'badqr' };
+fetch('voice/list.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (j) { VOICE.list = j; }).catch(function () {});
+function voiceFile(text) {
+  var L = VOICE.list;
+  if (!L) return '';
+  if (VOICE_FIXED[text]) return L.fixed[VOICE_FIXED[text]] || '';
+  var m = text.match(/^(.+?)(?:,)? (확인되었습니다|이미 출석했어요)$/);
+  if (!m) return '';
+  return m[2] === '확인되었습니다' ? (L.names[m[1]] || '') : (L.fixed.already || '');
+}
 function say(text, force) {
   $('faceMsg').textContent = text;
+  var f = voiceFile(text);
+  if (f) {
+    var a = VOICE.el || (VOICE.el = new Audio());
+    var busy = !a.paused && !a.ended;
+    if (!force && ((SAY.last === text && Date.now() - SAY.at < 5000) || busy)) return;
+    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
+    a.src = 'voice/' + f;
+    a.play().catch(function () {});
+    SAY.last = text; SAY.at = Date.now();
+    return;
+  }
   var ss = window.speechSynthesis;
   if (!ss) return;
-  if (!force && ((SAY.last === text && Date.now() - SAY.at < 5000) || ss.speaking)) return;
-  if (force) ss.cancel();
+  if (!force && ((SAY.last === text && Date.now() - SAY.at < 5000) || ss.speaking || (VOICE.el && !VOICE.el.paused && !VOICE.el.ended))) return;
+  if (force) { ss.cancel(); if (VOICE.el) VOICE.el.pause(); }
   var u = new SpeechSynthesisUtterance(text);
   u.lang = 'ko-KR'; u.rate = 1.05;
   var ko = ss.getVoices().filter(function (v) { return /^ko/i.test(v.lang); })[0];
