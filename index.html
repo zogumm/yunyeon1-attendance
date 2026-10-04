@@ -524,6 +524,9 @@ body:has(#scanTab.on) .wrap>#scanTab{flex:1}
 #scanTab .scan-art{flex:1;min-height:0;height:auto;overflow:hidden;margin:0 calc(var(--page) * -1)}
 #scanTab .scan-art .hill{left:0;right:0;top:auto;bottom:0;height:min(78%, 400px);border-radius:50% 50% 0 0 / 100% 100% 0 0}
 #scanTab .scan-art .hb{left:50%;bottom:118px;width:auto;height:min(calc(100% - 125px), calc(min(78%, 400px) - 30px));max-height:300px;transform:translateX(-50%)}
+/* 10-04 그림 스타일: 작은 글씨까지 가장 두껍게(Noto Sans KR 900), 큰 숫자·제목은 잘난체 유지 */
+.wrap,.wrap *:not(.disp):not(.disp *):not(.num),.tabbar,.tabbar *,.bs,.bs *,#menu,#menu *{font-weight:900!important}
+.wrap small,.wrap .cnt,.wrap .scan-sub{letter-spacing:-.2px}
 </style>
 </head>
 <body>
