@@ -732,7 +732,9 @@ body:has(#bookTab.on) header{color:var(--ink)}
 
 var S = { date: '', dates: [], people: [], checked: {}, absent: [], reasons: {}, lateBase: '9:50', team: '전체', view: 'scan', wf: 'all', kid: '', reason: '', auth: null };
 try { S.team = localStorage.getItem('att_team') || ''; } catch (e) {}
-try { S.auth = JSON.parse(localStorage.getItem('att_auth') || 'null'); } catch (e) {}
+// 앱을 끄면 다시 로그인(10-04 요청): 로그인 정보는 앱이 켜져 있는 동안만 기억
+try { localStorage.removeItem('att_auth'); } catch (e) {}
+try { S.auth = JSON.parse(sessionStorage.getItem('att_auth') || 'null'); } catch (e) {}
 
 function $(id) { return document.getElementById(id); }
 function el(tag, cls, text) {
@@ -772,7 +774,7 @@ function doLogin() {
   $('loginMsg').textContent = '확인 중…';
   S.auth = auth;
   call('login', [], function (r) {
-    try { localStorage.setItem('att_auth', JSON.stringify(auth)); } catch (e) {}
+    try { sessionStorage.setItem('att_auth', JSON.stringify(auth)); } catch (e) {}
     $('login').classList.remove('show');
     $('lgPin').value = '';
     toast(r.name + ' 선생님 환영해요');
