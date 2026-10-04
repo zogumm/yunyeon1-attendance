@@ -522,8 +522,8 @@ body:has(#scanTab.on) .wrap>*{flex:none}
 body:has(#scanTab.on) .wrap>.date{align-self:flex-start}
 body:has(#scanTab.on) .wrap>#scanTab{flex:1}
 #scanTab .scan-art{flex:1;min-height:0;height:auto;overflow:hidden;margin:0 calc(var(--page) * -1)}
-#scanTab .scan-art .hill{left:-60px;right:-60px;top:22%;bottom:auto;height:200%}
-#scanTab .scan-art .hb{left:50%;bottom:118px;width:auto;height:calc(100% - 130px);max-height:200px;transform:translateX(-50%)}
+#scanTab .scan-art .hill{left:0;right:0;top:auto;bottom:0;height:min(78%, 400px);border-radius:50% 50% 0 0 / 100% 100% 0 0}
+#scanTab .scan-art .hb{left:50%;bottom:118px;width:auto;height:min(calc(100% - 125px), calc(min(78%, 400px) - 30px));max-height:300px;transform:translateX(-50%)}
 </style>
 </head>
 <body>
