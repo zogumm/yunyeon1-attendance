@@ -825,7 +825,7 @@ google.script.run.withSuccessHandler(function (m) {
 }).withFailureHandler(function () { /* 그림이 없어도 로그인은 됨 */ }).getAvatars();
 
 function logout() {
-  try { localStorage.removeItem('att_auth'); } catch (e) {}
+  try { sessionStorage.removeItem('att_auth'); localStorage.removeItem('att_auth'); } catch (e) {}
   S.auth = null;
   $('lgPin').value = '';
   showLogin('');
