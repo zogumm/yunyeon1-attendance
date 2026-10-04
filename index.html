@@ -505,6 +505,13 @@ body:has(#bookTab.on) header{color:var(--ink)}
 .team{box-shadow:0 2px 0 rgba(20,20,20,.04)}
 .scan-art .hb{width:300px;bottom:118px}
 .scan-art .hill{bottom:-230px;height:470px}
+/* 10-04 폰 수정: 캐릭터를 고정 대신 글자 아래 이어 붙임(스크롤 시 겹침 방지) */
+.scan-art{position:relative;left:auto;right:auto;transform:none;width:auto;bottom:auto;margin:0;height:330px;z-index:0;overflow:visible}
+#scanTab .scan-tab{overflow:visible;min-height:0}
+.scan-art .hb{width:270px;bottom:92px}
+.scan-art .hill{left:-90px;right:-90px;bottom:-120px;height:400px}
+body:has(#scanTab.on){overflow-x:hidden}
+#scanTab .scan-tab{padding-bottom:0}
 </style>
 </head>
 <body>
