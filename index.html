@@ -874,6 +874,19 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
 #scanTab .scan-go{bottom:calc(57px + max(0px,env(safe-area-inset-bottom) - 22px))!important}
 /* 10-08 그멩님: 카메라 화면 노란 바탕을 조금 비치게 */
 #faceOv{background:rgba(253,218,51,.85)!important;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+
+/* try_reg_1008.html */
+.reg-pick{position:fixed;inset:0;z-index:60;background:rgba(10,14,30,.72);display:flex;align-items:flex-end;justify-content:center}
+.reg-pick .rp-in{background:#fff;color:#141414;width:min(560px,100%);max-height:86%;overflow:auto;border-radius:24px 24px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom))}
+.reg-pick .rp-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.reg-pick .rp-head img{width:72px;height:72px;object-fit:cover;border-radius:14px;transform:scaleX(-1)}
+.reg-pick .rp-head b{font-size:20px;font-weight:900}
+.reg-pick .rp-team{margin:14px 0 6px;font-size:14px;font-weight:900;color:#6F6758}
+.reg-pick .rp-row{display:flex;flex-wrap:wrap;gap:8px}
+.reg-pick .rp-b{min-height:44px;padding:0 14px;border-radius:22px;border:0;background:#F3EEE4;font:inherit;font-size:16px;font-weight:900;color:#141414}
+.reg-pick .rp-b small{margin-left:4px;color:#8A8274;font-weight:800}
+.reg-pick .rp-b.t{background:#FFF3C4}
+.reg-pick .rp-cancel{display:block;width:100%;margin-top:16px;min-height:48px;border:0;border-radius:24px;background:#141414;color:#fff;font:inherit;font-size:16px;font-weight:900}
 </style>
 </head>
 <body>
@@ -1034,10 +1047,11 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
     <div class="reg-btns">
       <button onclick="regShot()">📸 찍어서 등록</button>
       <label>🖼 사진 올리기<input type="file" id="regFile" accept="image/*" multiple hidden></label>
-      <button class="ghost" onclick="regClear()">이 아이 얼굴 지우기</button>
+      <button class="ghost" onclick="regClear()">위 사람 얼굴 지우기</button>
     </div>
-    <div class="cam-msg" id="regMsg">아이를 고르고, 얼굴이 정면으로 크게 나오게 찍어 주세요. 한 아이당 3~5장이면 좋아요.</div>
-  </div>
+    <div class="cam-msg" id="regMsg">얼굴이 정면으로 크게 나오게 찍으면, 누구인지 고르는 창이 떠요. 한 사람당 3~5장이면 좋아요.</div>
+  <div class="reg-pick" id="regPick" hidden><div class="rp-in"><div class="rp-head"><img id="rpImg" alt=""><b>누구 얼굴인가요?</b></div><div id="rpList"></div><button type="button" class="rp-cancel" onclick="regPickClose()">취소</button></div></div>
+</div>
 </div>
 
 <div class="overlay" id="scan">
@@ -2256,7 +2270,7 @@ function openReg() {
   $('regMsg').textContent = '얼굴 인식 준비 중…';
   ensureEngine().then(function () { return startCam($('rvideo')); }).then(function (st) {
     REG.stream = st;
-    $('regMsg').textContent = '아이를 고르고, 얼굴이 정면으로 크게 나오게 찍어 주세요. 한 아이당 3~5장이면 좋아요.';
+    $('regMsg').textContent = '얼굴이 정면으로 크게 나오게 찍으면, 누구인지 고르는 창이 떠요. 한 사람당 3~5장이면 좋아요.';
   }).catch(function (e) { $('regMsg').textContent = '⚠️ ' + ((e && e.message) || e); });
 }
 function closeReg() { stopCam(REG.stream); REG.stream = null; $('regOv').classList.remove('show'); render(); }
@@ -2266,8 +2280,8 @@ function fillRegWho() {
   sel.innerHTML = '';
   teams().forEach(function (t) {
     var g = document.createElement('optgroup'); g.label = t;
-    S.people.filter(function (p) { return p.jo === t && !p.teacher; }).forEach(function (p) {
-      var o = el('option', '', p.name + ' · ' + ((S.faces || {})[p.name] || 0) + '장');
+    S.people.filter(function (p) { return p.jo === t; }).forEach(function (p) {
+      var o = el('option', '', p.name + (p.teacher ? ' 선생님' : '') + ' · ' + ((S.faces || {})[p.name] || 0) + '장');
       o.value = p.name; g.appendChild(o);
     });
     var add = el('option', '', '＋ ' + t + '에 새 친구 추가');
@@ -2310,8 +2324,41 @@ function regSave(src, w, h, forName) {
 function regShot() {
   var v = $('rvideo');
   if (!v.videoWidth) return;
-  $('regMsg').textContent = '확인 중…';
-  regSave(v, v.videoWidth, v.videoHeight).catch(function (e) { $('regMsg').textContent = '⚠️ ' + ((e && e.message) || e); });
+  var c = document.createElement('canvas');
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  c.getContext('2d').drawImage(v, 0, 0);
+  REG.snap = c;
+  $('rpImg').src = c.toDataURL('image/jpeg', 0.7);
+  fillRegPick();
+  $('regPick').hidden = false;
+}
+// 10-08 그멩님: 찍은 다음 "누구 얼굴인가요?" 창에서 이름을 고르면 그 사람에게 등록(미리 골라 둔 아이에게 잘못 들어가는 일 방지)
+function fillRegPick() {
+  var box = $('rpList');
+  box.innerHTML = '';
+  teams().forEach(function (t) {
+    box.appendChild(el('div', 'rp-team', t));
+    var row = el('div', 'rp-row');
+    S.people.filter(function (p) { return p.jo === t; }).forEach(function (p) {
+      var b = el('button', 'rp-b' + (p.teacher ? ' t' : ''), p.name + (p.teacher ? ' 선생님' : ''));
+      b.type = 'button';
+      var n = (S.faces || {})[p.name] || 0;
+      if (n) b.appendChild(el('small', '', n + '장'));
+      b.onclick = function () { regPickDo(p.name); };
+      row.appendChild(b);
+    });
+    box.appendChild(row);
+  });
+}
+function regPickClose() { $('regPick').hidden = true; REG.snap = null; }
+function regPickDo(name) {
+  var c = REG.snap;
+  $('regPick').hidden = true;
+  REG.snap = null;
+  if (!c) return;
+  $('regMsg').textContent = name + ' 얼굴 확인 중…';
+  $('regWho').value = name; REG.last = name;
+  regSave(c, c.width, c.height, name).catch(function (e) { $('regMsg').textContent = '⚠️ ' + ((e && e.message) || e); });
 }
 
 // 파일 이름이 아이 이름이면(김하늘.jpg, 김하늘_2.jpg, 김하늘 (3).jpg) 그 아이에게, 아니면 위에서 고른 아이에게 등록
