@@ -873,6 +873,14 @@ html.fitz #scanTab .scan-art .hb{height:min(316px,calc(100% - 120px))!important}
 /* 10-08 그멩님: 아이폰 확대 막기 — 입력칸 글자 16px 미만이면 누를 때 자동 확대됨, 두 번 톡 확대도 막음 */
 input,select,textarea{font-size:16px!important}
 html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
+
+/* try_hill_1008.html */
+#scanTab .scan-go{bottom:calc(72px + env(safe-area-inset-bottom))!important}
+#scanTab .scan-art .hb{bottom:56px!important}
+#scanTab .scan-art .hill{left:0!important;right:0!important;width:auto!important;height:auto!important;aspect-ratio:1/1;margin-left:0!important;border-radius:50%!important;bottom:min(304px,calc(100% - 6px))!important;top:auto!important;transform:translateY(100%)!important}
+#scanTab .scan-art .hill::after{content:"";position:absolute;left:0;right:0;top:50%;bottom:-600px;background:inherit}
+html.fitz #scanTab .scan-art .hb{bottom:80px!important;width:auto!important;margin-left:0!important;left:50%!important;transform:translateX(-50%)!important}
+html.fitz #scanTab .scan-art .hill{bottom:min(426px,calc(100% - 6px))!important;left:0!important;right:0!important;width:auto!important;height:auto!important;margin-left:0!important}
 </style>
 </head>
 <body>
