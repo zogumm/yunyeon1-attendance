@@ -804,6 +804,7 @@ body:has(#scanTab.on){background:#FAF5EA}
 .book-sub{color:#fff!important;font-size:19px!important}
 .book-sub b,#doneTeamCount{color:#fff!important;text-decoration:underline 4px #FDDA33;text-underline-offset:5px}
 .back{background:rgba(0,0,0,.18)!important}
+#waitTab .back{background:none!important;color:var(--ink)!important;font-weight:900!important}
 #bsSub,.bs-week-date,.bs-summary-card span{color:#6F6758!important}
 #login .go{background:#E2541A!important;font-size:19px!important}
 #login .brand-name em{color:#E2541A!important}
@@ -841,7 +842,7 @@ html.fitz .wrap{max-width:390px!important}
 .tabbar button{position:relative!important;background:transparent!important;color:#4A3B0E!important;height:46px!important;border-radius:23px!important;margin:3px!important}
 .tabbar button.on{background:#fff!important;color:var(--ink)!important;box-shadow:0 1px 3px rgba(80,60,0,.12)}
 .date select{font-size:13.3px!important;padding:13px 24px 13px 12px!important}
-.date::before{height:31px!important;border-radius:16px!important}
+.date::before{height:38px!important;border-radius:19px!important}
 .date:after{right:10px!important;border-width:4px!important;border-top-width:6px!important}
 #teamTab .team-head .back b{font-size:0!important;-webkit-text-stroke:0!important}
 #teamTab .team-head .back b::before{content:"";display:block;border-style:solid;border-width:10px 15px 10px 0;border-color:transparent #fff transparent transparent;transform:translateX(-2.5px)}
@@ -870,10 +871,10 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
 /* 10-08 그멩님: 아이폰 홈 막대 위 빈칸만큼 아래 덩어리(탭·버튼·캐릭터·반원)를 내림 — 안전 여백 34px 중 22px를 씀 */
 .tabbar{padding-bottom:max(6px,calc(env(safe-area-inset-bottom) - 12px))!important}
 .tabbar::before{bottom:max(6px,calc(env(safe-area-inset-bottom) - 12px))!important}
-#scanTab .scan-art{margin-bottom:calc(68px + max(0px,env(safe-area-inset-bottom) - 22px))!important}
-#scanTab .scan-go{bottom:calc(57px + max(0px,env(safe-area-inset-bottom) - 22px))!important}
+#scanTab .scan-art{margin-bottom:calc(77px + max(0px,env(safe-area-inset-bottom) - 22px))!important}
+#scanTab .scan-go{bottom:calc(92px + max(0px,env(safe-area-inset-bottom) - 22px))!important;font-size:21px!important}
 /* 10-08 그멩님: 카메라 화면 노란 바탕을 조금 비치게 */
-#faceOv{background:rgba(253,218,51,.85)!important;-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
+#faceOv{background:#FDDA33!important;-webkit-backdrop-filter:none;backdrop-filter:none}
 
 /* try_reg_1008.html */
 .reg-pick{position:fixed;inset:0;z-index:60;background:rgba(10,14,30,.72);display:flex;align-items:flex-end;justify-content:center}
