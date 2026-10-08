@@ -812,6 +812,7 @@ body:has(#scanTab.on){background:#FAF5EA}
 #login .k,.hero .k,p.k{color:#5C4A12!important;opacity:1!important}
 
 /* ⑤ 7주표 이름 아래 '이수 위험' 꼬리표 */
+#bookTab .empty{grid-column:1/-1;text-align:center}
 .t7-who .t7-tch{font-size:10px;line-height:12px;font-weight:800;color:#8A8274}
 .t7-risk{font-style:normal;font-size:12px;line-height:16px;font-weight:900;color:#fff;background:#D01F2B;border-radius:8px;padding:0 6px;margin-top:2px;white-space:nowrap}
 
@@ -1097,7 +1098,7 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
   <label for="lgName">이름</label>
   <input id="lgName" type="text" maxlength="20" autocomplete="off" autocapitalize="off" spellcheck="false">
   <label for="lgPin">PIN 네 자리</label>
-  <input id="lgPin" type="password" inputmode="numeric" maxlength="4" placeholder="" autocomplete="new-password">
+  <input id="lgPin" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="-webkit-text-security:disc">
   <button class="go" onclick="doLogin()">들어가기</button>
   <div id="loginMsg"></div>
   <p class="login-hint">PIN은 <b>휴대폰 번호 뒷 4자리</b>예요.<br>들어간 뒤 오른쪽 위 내 이름을 눌러 바꿀 수 있어요.</p>
@@ -1190,7 +1191,7 @@ function doLogin() {
     $('lgPin').value = '';
     toast(r.name + ' 선생님 환영해요');
     showView('scan');
-    load('');
+    S.loading = true; load('');
   });
 }
 
@@ -1359,6 +1360,7 @@ function load(date) {
   });
 }
 function applyBoot(d) {
+    S.loading = false;
     S.date = d.date;
     S.dates = d.dates;
     S.people = d.people;
@@ -1461,7 +1463,7 @@ function renderWait() {
   box.innerHTML = '';
 
   if (!S.people.length) {
-    box.appendChild(el('p', 'none', '출석부에 이름이 없어요'));
+    box.appendChild(el('p', 'none', S.loading ? '서버에서 출석부 불러오는 중… 처음엔 15초쯤 걸려요' : '출석부에 이름이 없어요'));
     $('waitMore').textContent = '';
     return;
   }
@@ -1544,7 +1546,7 @@ function renderTeams() {
   box.innerHTML = '';
 
   if (!S.people.length) {
-    box.appendChild(el('div', 'empty', '출석부에 이름이 없어요.'));
+    box.appendChild(el('div', 'empty', S.loading ? '서버에서 출석부 불러오는 중… 처음엔 15초쯤 걸려요' : '출석부에 이름이 없어요.'));
     $('doneTeamCount').textContent = '0';
     return;
   }
@@ -1630,7 +1632,7 @@ function renderTeam() {
   out.textContent = '';
 
   if (!ks.length) {
-    out.appendChild(el('div', 'empty', '이 조에 아이 이름이 없어요.'));
+    out.appendChild(el('div', 'empty', S.loading ? '서버에서 불러오는 중…' : '이 조에 아이 이름이 없어요.'));
     return;
   }
 
@@ -2524,7 +2526,7 @@ function regClear() {
 }
 
 $('lgPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
-if (S.auth) load(''); else showLogin('');
+if (S.auth) { setMe(); S.loading = true; load(''); } else showLogin('');   // 10-08: 이름은 바로, 명단은 서버 뒤에
 </script>
 <script>(function(){var pr=document.createElement('div');pr.style.cssText='position:fixed;visibility:hidden;pointer-events:none;top:0;left:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)';function fit(){if(!pr.parentNode)document.body.appendChild(pr);var cs=getComputedStyle(pr),ins=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0);var w=innerWidth,h=innerHeight,z=Math.min(w/390,h/(844+ins)),r=document.documentElement;if(Math.abs(z-1)<0.02)z=1;r.style.zoom=z!==1?z:'';r.classList.toggle('fitz',z>1);r.classList.toggle('shrink',z<1);r.style.setProperty('--fh',(h/z)+'px');}fit();addEventListener('resize',fit);addEventListener('orientationchange',fit);})();</script>
 <script>document.addEventListener('gesturestart',function(e){e.preventDefault();});document.addEventListener('dblclick',function(e){e.preventDefault();},{passive:false});</script>
