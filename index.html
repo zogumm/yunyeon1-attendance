@@ -759,7 +759,6 @@ body:has(#scanTab.on){background:#FAF5EA}
 
 /* try_gap_1007.html */
 #scanTab .scan-art .hill{bottom:-94px}
-#scanTab .scan-art .hill:after{content:"";position:absolute;left:-200px;right:-200px;top:50%;bottom:-600px;background:inherit}
 #scanTab .scan-art .hb{bottom:112px!important}
 #scanTab .scan-go{bottom:calc(60px + env(safe-area-inset-bottom))}
 
@@ -813,6 +812,22 @@ body:has(#scanTab.on){background:#FAF5EA}
 
 /* ⑦ 키보드 포커스 표시 */
 :focus-visible{outline:3px solid #1A66D2!important;outline-offset:2px}
+
+/* try_ipad_1008.html */
+html.fitz body:has(#scanTab.on),html.fitz body:has(#scanTab.on) .wrap{height:var(--fh)!important}
+html.fitz #bs{max-height:calc(var(--fh) * .88)!important}
+/* 10-08 그멩님: 아이패드에서 캐릭터·글자 더 크게, 7주표(과제) 크게, 아래 탭 글씨 크게 (폰은 그대로) */
+html.fitz .tabbar button{font-size:20px!important;height:52px!important}
+html.fitz #scanTab .scan-copy h2{font-size:52px!important}
+html.fitz #scanTab #todayN{font-size:92px!important}
+html.fitz #scanTab .cnt-here span{font-size:35px!important}
+html.fitz #scanTab .cnt-miss strong{font-size:48px!important}
+html.fitz #scanTab #missLbl{font-size:28px!important}
+html.fitz #scanTab .miss-go{font-size:21px!important}
+html.fitz #scanTab .scan-sub{font-size:20px!important}
+html.fitz #scanTab .scan-go{height:66px!important;border-radius:33px!important;font-size:21px!important;width:min(420px,calc(100% - 48px))!important}
+html.fitz #scanTab .scan-art .hb{width:290px!important;margin-left:-145px!important;bottom:136px!important}
+html.fitz #scanTab .scan-art .hill{width:560px!important;height:560px!important;margin-left:-280px!important;bottom:-150px!important}
 </style>
 </head>
 <body>
@@ -913,8 +928,8 @@ body:has(#scanTab.on){background:#FAF5EA}
 </div>
 
 <nav class="tabbar">
-  <button id="tbScan" class="on" onclick="showView('scan')">📷 오늘</button>
-  <button id="tbBook" onclick="showView('book')">📋 명단</button>
+  <button id="tbScan" class="on" onclick="showView('scan')">📷 출석 인식</button>
+  <button id="tbBook" onclick="showView('book')">📋 허니유 출석부</button>
 </nav>
 
 <div class="dim" id="dim" onclick="closeSheets()"></div>
@@ -2288,5 +2303,6 @@ function regClear() {
 $('lgPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
 if (S.auth) load(''); else showLogin('');
 </script>
+<script>(function(){function fit(){var w=innerWidth,h=innerHeight,z=w>=700?Math.max(1,Math.min(w/430,h/932)):1,r=document.documentElement;r.style.zoom=z>1?z:'';r.classList.toggle('fitz',z>1);r.style.setProperty('--fh',(h/z)+'px');}fit();addEventListener('resize',fit);addEventListener('orientationchange',fit);})();</script>
 </body>
 </html>
