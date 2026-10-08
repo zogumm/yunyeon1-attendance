@@ -879,6 +879,9 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
 /* try_reg_1008.html */
 .reg-pick{position:fixed;inset:0;z-index:60;background:rgba(10,14,30,.72);display:flex;align-items:flex-end;justify-content:center}
 .reg-pick[hidden]{display:none!important}
+.reg-pick #rpQ{display:block;width:100%;box-sizing:border-box;margin:6px 0 2px;min-height:46px;padding:0 16px;border:2px solid #E6DDCC;border-radius:23px;background:#FBF8F2;font:inherit;font-size:16px;font-weight:700;color:#141414}
+.reg-pick #rpQ:focus{outline:none;border-color:#FDDA33}
+.reg-pick [hidden]{display:none!important}
 .reg-pick .rp-in{background:#fff;color:#141414;width:min(560px,100%);max-height:86%;overflow:auto;border-radius:24px 24px 0 0;padding:16px 16px calc(18px + env(safe-area-inset-bottom))}
 .reg-pick .rp-head{display:flex;align-items:center;gap:12px;margin-bottom:6px}
 .reg-pick .rp-head img{width:72px;height:72px;object-fit:cover;border-radius:14px;transform:scaleX(-1)}
@@ -1052,7 +1055,7 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
       <button class="ghost" onclick="regClear()">위 사람 얼굴 지우기</button>
     </div>
     <div class="cam-msg" id="regMsg">얼굴이 정면으로 크게 나오게 찍으면, 누구인지 고르는 창이 떠요. 한 사람당 3~5장이면 좋아요.</div>
-  <div class="reg-pick" id="regPick" hidden><div class="rp-in"><div class="rp-head"><img id="rpImg" alt=""><b>누구 얼굴인가요?</b></div><div id="rpList"></div><button type="button" class="rp-cancel" onclick="regPickClose()">취소</button></div></div>
+  <div class="reg-pick" id="regPick" hidden><div class="rp-in"><div class="rp-head"><img id="rpImg" alt=""><b>누구 얼굴인가요?</b></div><input id="rpQ" type="search" placeholder="이름 검색" autocomplete="off" aria-label="이름 검색" oninput="rpFilter()"><div id="rpList"></div><button type="button" class="rp-cancel" onclick="regPickClose()">취소</button></div></div>
 </div>
 </div>
 
@@ -2342,6 +2345,7 @@ function regShot() {
   REG.snap = c;
   $('rpImg').src = c.toDataURL('image/jpeg', 0.7);
   fillRegPick();
+  $('rpQ').value = '';
   $('regPick').hidden = false;
 }
 // 10-08 그멩님: 찍은 다음 "누구 얼굴인가요?" 창에서 이름을 고르면 그 사람에게 등록(미리 골라 둔 아이에게 잘못 들어가는 일 방지)
@@ -2354,6 +2358,7 @@ function fillRegPick() {
     S.people.filter(function (p) { return p.jo === t; }).forEach(function (p) {
       var b = el('button', 'rp-b' + (p.teacher ? ' t' : ''), p.name + (p.teacher ? ' 선생님' : ''));
       b.type = 'button';
+      b.dataset.name = p.name;
       var n = (S.faces || {})[p.name] || 0;
       if (n) b.appendChild(el('small', '', n + '장'));
       b.onclick = function () { regPickDo(p.name); };
@@ -2361,6 +2366,16 @@ function fillRegPick() {
     });
     box.appendChild(row);
   });
+}
+// 10-08 그멩님: 이름 검색 — 친 글자가 들어간 이름만 남기고, 남는 이름이 없는 조 제목은 숨김
+function rpFilter() {
+  var q = $('rpQ').value.split(' ').join('');
+  var kids = $('rpList').children;
+  for (var i = 0; i < kids.length; i += 2) {
+    var any = false;
+    [].forEach.call(kids[i + 1].children, function (b) { var on = !q || b.dataset.name.indexOf(q) >= 0; b.hidden = !on; if (on) any = true; });
+    kids[i].hidden = kids[i + 1].hidden = !any;
+  }
 }
 function regPickClose() { $('regPick').hidden = true; REG.snap = null; }
 function regPickDo(name) {
