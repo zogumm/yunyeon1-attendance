@@ -867,6 +867,11 @@ html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 #scanTab .scan-art .hill::after{content:"";position:absolute;left:0;right:0;top:50%;bottom:-600px;background:inherit}
 /* 10-08: 폰보다 큰 화면 = 폰 화면 그대로 비율 확대(탭 띠도 폰 폭) */
 html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;transform:translateX(-50%)!important;padding-left:16px!important;padding-right:16px!important}
+/* 10-08 그멩님: 아이폰 홈 막대 위 빈칸만큼 아래 덩어리(탭·버튼·캐릭터·반원)를 내림 — 안전 여백 34px 중 22px를 씀 */
+.tabbar{padding-bottom:max(6px,calc(env(safe-area-inset-bottom) - 12px))!important}
+.tabbar::before{bottom:max(6px,calc(env(safe-area-inset-bottom) - 12px))!important}
+#scanTab .scan-art{margin-bottom:calc(68px + max(0px,env(safe-area-inset-bottom) - 22px))!important}
+#scanTab .scan-go{bottom:calc(57px + max(0px,env(safe-area-inset-bottom) - 22px))!important}
 </style>
 </head>
 <body>
