@@ -874,7 +874,8 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
 #scanTab .scan-art{margin-bottom:calc(77px + max(0px,env(safe-area-inset-bottom) - 22px))!important}
 #scanTab .scan-go{bottom:calc(92px + max(0px,env(safe-area-inset-bottom) - 22px))!important;font-size:21px!important}
 /* 10-08 그멩님: 카메라 화면 노란 바탕을 조금 비치게 */
-#faceOv{background:#FDDA33!important;-webkit-backdrop-filter:none;backdrop-filter:none}
+#faceOv{background:#FDDA33!important;-webkit-backdrop-filter:none;backdrop-filter:none;transition:background-color .4s}
+#faceOv.live{background:#FFF3B8!important}
 
 /* try_reg_1008.html */
 .reg-pick{position:fixed;inset:0;z-index:60;background:rgba(10,14,30,.72);display:flex;align-items:flex-end;justify-content:center}
@@ -1243,7 +1244,9 @@ function teams() {
   S.people.forEach(function (p) { seen[p.jo] = true; });
   return Object.keys(seen).sort(teamSort);
 }
-function kids() { return S.people.filter(function (p) { return !p.teacher; }); }
+// 10-08 그멩님: 시험 기간엔 선생님도 출석 숫자·안 온 친구에 넣음. 실제 운영 때 false로 바꾸면 아이만 셈
+var COUNT_TEACHERS = true;
+function kids() { return S.people.filter(function (p) { return COUNT_TEACHERS || !p.teacher; }); }
 function byName(n) { return S.people.filter(function (p) { return p.name === n; })[0]; }
 
 // ── 지각·결석 판정 (서버와 같은 규칙) ─────────────────────────
@@ -2098,6 +2101,7 @@ function openFace() {
     return startCam($('fvideo'), FACE.facing);
   }).then(function (st) {
     FACE.stream = st;
+    $('faceOv').classList.add('live');   // 10-08 그멩님: 카메라 켜지면 노랑을 연하게
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (l) { FACE.wake = l; }).catch(function () {});
     idleMsg();
     FACE.timer = setInterval(faceTick, 300);
@@ -2170,6 +2174,7 @@ function switchCam(f) {
     .catch(function (e) { $('faceMsg').textContent = '⚠️ 카메라를 못 켰어요: ' + ((e && e.message) || e); });
 }
 function closeFace() {
+  $('faceOv').classList.remove('live');
   clearInterval(FACE.timer);
   stopCam(FACE.stream);
   FACE.stream = null;
