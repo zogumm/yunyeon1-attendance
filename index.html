@@ -1072,10 +1072,15 @@ html.fitz #scanTab .scan-art .hill{bottom:-176px!important}
     FNS.forEach(function (name) {
       r[name] = function () {
         var args = Array.prototype.slice.call(arguments);
-        fetch(API_URL, { method: 'POST', redirect: 'follow',
+        // 10-08: 서버가 처음 깨어날 때 연결이 끊기면(Failed to fetch) 읽기 기능은 2번까지 다시 시도
+        var tries = /^(login|getBoot|getFaces|getAvatars)$/.test(name) ? 3 : 1;
+        (function go(n) {
+          return fetch(API_URL, { method: 'POST', redirect: 'follow',
                          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                          body: JSON.stringify({ fn: name, args: args }) })
-          .then(function (res) { return res.json(); })
+            .then(function (res) { return res.json(); })
+            .catch(function (e) { if (n > 1) return new Promise(function (r) { setTimeout(r, 1500); }).then(function () { return go(n - 1); }); throw e; });
+        })(tries)
           .then(function (o) { if (!o || !o.ok) throw new Error((o && o.err) || '서버 오류'); return o.r; })
           .then(function (v) { if (ok) ok(v); }, function (e) { if (fail) fail(e); });
       };
