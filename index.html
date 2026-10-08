@@ -827,30 +827,19 @@ html.shrink #bs{max-height:calc(var(--fh) * .88)!important}
 /* 10-08 그멩님: 아이폰 기준(390x844) 비율 그대로 통째로 줄일 때는 작은 폰용 캐릭터 숨김을 끔 */
 html.shrink #scanTab .scan-art{display:block!important}
 html.fitz #bs{max-height:calc(var(--fh) * .88)!important}
-/* 10-08 그멩님: 아이패드에서 캐릭터·글자 더 크게, 7주표(과제) 크게, 아래 탭 글씨 크게 (폰은 그대로) */
-html.fitz .tabbar button{font-size:20px!important;height:52px!important}
-html.fitz #scanTab .scan-copy h2{font-size:52px!important}
-html.fitz #scanTab #todayN{font-size:92px!important}
-html.fitz #scanTab .cnt-here span{font-size:35px!important}
-html.fitz #scanTab .cnt-miss strong{font-size:48px!important}
-html.fitz #scanTab #missLbl{font-size:28px!important}
-html.fitz #scanTab .miss-go{font-size:21px!important}
-html.fitz #scanTab .scan-sub{font-size:20px!important}
-html.fitz #scanTab .scan-go{height:66px!important;border-radius:33px!important;font-size:21px!important;width:min(420px,calc(100% - 48px))!important}
-html.fitz #scanTab .scan-art .hb{width:290px!important;margin-left:-145px!important;bottom:136px!important}
-html.fitz #scanTab .scan-art .hill{width:560px!important;height:560px!important;margin-left:-280px!important;bottom:-150px!important}
 /* 10-08 탭 띠: 예전 규칙(right:0·margin auto)과 새 규칙(left:50%·translate)이 겹쳐 넓은 화면일수록 오른쪽으로 밀리던 것 바로잡음.
    컴퓨터 = 본문 폭(560px)에 맞춰 자름 / 아이패드(키운 화면) = 흰 띠를 화면 좌우 끝까지, 버튼은 본문 폭 가운데 */
 .tabbar{left:50%!important;right:auto!important;width:min(560px,100%)!important;max-width:none!important;margin:0!important;transform:translateX(-50%)!important}
 html.fitz .tabbar{left:0!important;right:0!important;width:auto!important;transform:none!important;padding-left:max(16px,calc((100% - 560px) / 2 + 16px))!important;padding-right:max(16px,calc((100% - 560px) / 2 + 16px))!important}
+/* 10-08 그멩님: 아이패드·컴퓨터는 폰(390) 화면 그대로 비율만 키움 */
+html.fitz .wrap{max-width:390px!important}
 
 /* try_tab_1008.html */
 .tabbar{background:transparent!important;box-shadow:none!important;padding-top:6px!important;padding-bottom:calc(10px + env(safe-area-inset-bottom))!important}
-.tabbar::before{display:block!important;content:""!important;position:absolute!important;top:6px!important;bottom:calc(10px + env(safe-area-inset-bottom))!important;left:max(16px,calc((100% - 560px) / 2 + 16px))!important;right:max(16px,calc((100% - 560px) / 2 + 16px))!important;background:#FDDA33!important;border-radius:999px!important}
+.tabbar::before{display:block!important;content:""!important;position:absolute!important;top:6px!important;bottom:calc(10px + env(safe-area-inset-bottom))!important;left:16px!important;right:16px!important;background:#FDDA33!important;border-radius:999px!important}
 .tabbar{gap:0!important}
 .tabbar button{position:relative!important;background:transparent!important;color:#4A3B0E!important;height:46px!important;border-radius:23px!important;margin:3px!important}
 .tabbar button.on{background:#fff!important;color:var(--ink)!important;box-shadow:0 1px 3px rgba(80,60,0,.12)}
-html.fitz .tabbar button{height:50px!important}
 .date select{font-size:13.3px!important;padding:13px 24px 13px 12px!important}
 .date::before{height:31px!important;border-radius:16px!important}
 .date:after{right:10px!important;border-width:4px!important;border-top-width:6px!important}
@@ -861,13 +850,10 @@ html.fitz .tabbar button{height:50px!important}
 #scanTab .scan-go{bottom:calc(102px + env(safe-area-inset-bottom))!important}
 #scanTab .scan-art .hb{bottom:86px!important}
 #scanTab .scan-art .hill{bottom:-120px!important}
-html.fitz #scanTab .scan-art .hb{bottom:110px!important}
-html.fitz #scanTab .scan-art .hill{bottom:-176px!important}
 /* 삼각형을 동그라미 정가운데에 */
 #teamTab .team-head .back b{position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important}
 /* 10-08 실제 아이폰: 안전 여백 때문에 그림 자리가 좁아 머리가 잘림 → 남은 높이에 맞춰 캐릭터 크기 자동(최대 218px 높이) */
 #scanTab .scan-art .hb{width:auto!important;height:min(218px,calc(100% - 96px))!important;margin-left:0!important;left:50%!important;transform:translateX(-50%)!important}
-html.fitz #scanTab .scan-art .hb{height:min(316px,calc(100% - 120px))!important}
 
 /* try_login_1008.html */
 /* 10-08 그멩님: 아이폰 확대 막기 — 입력칸 글자 16px 미만이면 누를 때 자동 확대됨, 두 번 톡 확대도 막음 */
@@ -875,12 +861,12 @@ input,select,textarea{font-size:16px!important}
 html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 
 /* try_hill_1008.html */
-#scanTab .scan-go{bottom:calc(72px + env(safe-area-inset-bottom))!important}
-#scanTab .scan-art .hb{bottom:56px!important}
-#scanTab .scan-art .hill{left:0!important;right:0!important;width:auto!important;height:auto!important;aspect-ratio:1/1;margin-left:0!important;border-radius:50%!important;bottom:min(304px,calc(100% - 6px))!important;top:auto!important;transform:translateY(100%)!important}
+#scanTab .scan-go{bottom:calc(57px + env(safe-area-inset-bottom))!important}
+#scanTab .scan-art .hb{bottom:41px!important}
+#scanTab .scan-art .hill{left:0!important;right:0!important;width:auto!important;height:auto!important;aspect-ratio:1/1;margin-left:0!important;border-radius:50%!important;bottom:min(289px,calc(100% - 6px))!important;top:auto!important;transform:translateY(100%)!important}
 #scanTab .scan-art .hill::after{content:"";position:absolute;left:0;right:0;top:50%;bottom:-600px;background:inherit}
-html.fitz #scanTab .scan-art .hb{bottom:80px!important;width:auto!important;margin-left:0!important;left:50%!important;transform:translateX(-50%)!important}
-html.fitz #scanTab .scan-art .hill{bottom:min(426px,calc(100% - 6px))!important;left:0!important;right:0!important;width:auto!important;height:auto!important;margin-left:0!important}
+/* 10-08: 폰보다 큰 화면 = 폰 화면 그대로 비율 확대(탭 띠도 폰 폭) */
+html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;transform:translateX(-50%)!important;padding-left:16px!important;padding-right:16px!important}
 </style>
 </head>
 <body>
