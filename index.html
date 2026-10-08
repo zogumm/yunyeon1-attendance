@@ -822,7 +822,10 @@ body:has(#scanTab.on){background:#FAF5EA}
 :focus-visible{outline:3px solid #1A66D2!important;outline-offset:2px}
 
 /* try_ipad_1008.html */
-html.fitz body:has(#scanTab.on),html.fitz body:has(#scanTab.on) .wrap{height:var(--fh)!important}
+html.fitz body:has(#scanTab.on),html.fitz body:has(#scanTab.on) .wrap,html.shrink body:has(#scanTab.on),html.shrink body:has(#scanTab.on) .wrap{height:var(--fh)!important}
+html.shrink #bs{max-height:calc(var(--fh) * .88)!important}
+/* 10-08 그멩님: 아이폰 기준(390x844) 비율 그대로 통째로 줄일 때는 작은 폰용 캐릭터 숨김을 끔 */
+html.shrink #scanTab .scan-art{display:block!important}
 html.fitz #bs{max-height:calc(var(--fh) * .88)!important}
 /* 10-08 그멩님: 아이패드에서 캐릭터·글자 더 크게, 7주표(과제) 크게, 아래 탭 글씨 크게 (폰은 그대로) */
 html.fitz .tabbar button{font-size:20px!important;height:52px!important}
@@ -2345,6 +2348,6 @@ function regClear() {
 $('lgPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') doLogin(); });
 if (S.auth) load(''); else showLogin('');
 </script>
-<script>(function(){function fit(){var w=innerWidth,h=innerHeight,z=Math.max(1,Math.min(w/430,h/932)),r=document.documentElement;r.style.zoom=z>1?z:'';r.classList.toggle('fitz',z>1);r.style.setProperty('--fh',(h/z)+'px');}fit();addEventListener('resize',fit);addEventListener('orientationchange',fit);})();</script>
+<script>(function(){var pr=document.createElement('div');pr.style.cssText='position:fixed;visibility:hidden;pointer-events:none;top:0;left:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)';function fit(){if(!pr.parentNode)document.body.appendChild(pr);var cs=getComputedStyle(pr),ins=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0);var w=innerWidth,h=innerHeight,z=Math.min(w/390,h/(844+ins)),r=document.documentElement;if(Math.abs(z-1)<0.02)z=1;r.style.zoom=z!==1?z:'';r.classList.toggle('fitz',z>1);r.classList.toggle('shrink',z<1);r.style.setProperty('--fh',(h/z)+'px');}fit();addEventListener('resize',fit);addEventListener('orientationchange',fit);})();</script>
 </body>
 </html>
