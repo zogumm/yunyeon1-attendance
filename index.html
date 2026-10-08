@@ -828,6 +828,10 @@ html.fitz #scanTab .scan-sub{font-size:20px!important}
 html.fitz #scanTab .scan-go{height:66px!important;border-radius:33px!important;font-size:21px!important;width:min(420px,calc(100% - 48px))!important}
 html.fitz #scanTab .scan-art .hb{width:290px!important;margin-left:-145px!important;bottom:136px!important}
 html.fitz #scanTab .scan-art .hill{width:560px!important;height:560px!important;margin-left:-280px!important;bottom:-150px!important}
+/* 10-08 탭 띠: 예전 규칙(right:0·margin auto)과 새 규칙(left:50%·translate)이 겹쳐 넓은 화면일수록 오른쪽으로 밀리던 것 바로잡음.
+   컴퓨터 = 본문 폭(560px)에 맞춰 자름 / 아이패드(키운 화면) = 흰 띠를 화면 좌우 끝까지, 버튼은 본문 폭 가운데 */
+.tabbar{left:50%!important;right:auto!important;width:min(560px,100%)!important;max-width:none!important;margin:0!important;transform:translateX(-50%)!important}
+html.fitz .tabbar{left:0!important;right:0!important;width:auto!important;transform:none!important;padding-left:max(16px,calc((100% - 560px) / 2 + 16px))!important;padding-right:max(16px,calc((100% - 560px) / 2 + 16px))!important}
 </style>
 </head>
 <body>
