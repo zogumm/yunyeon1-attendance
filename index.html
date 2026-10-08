@@ -1073,7 +1073,7 @@ html.fitz #scanTab .scan-art .hill{bottom:-176px!important}
       r[name] = function () {
         var args = Array.prototype.slice.call(arguments);
         // 10-08: 서버가 처음 깨어날 때 연결이 끊기면(Failed to fetch) 읽기 기능은 2번까지 다시 시도
-        var tries = /^(login|getBoot|getFaces|getAvatars)$/.test(name) ? 3 : 1;
+        var tries = /^(login|getBoot|getFaces|getAvatars|setCheck|setHomework|checkByQr)$/.test(name) ? 3 : 1;
         (function go(n) {
           return fetch(API_URL, { method: 'POST', redirect: 'follow',
                          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
