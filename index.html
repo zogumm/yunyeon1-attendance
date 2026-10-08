@@ -13,7 +13,7 @@
 <meta property="og:title" content="허니유 출석부">
 <meta property="og:description" content="송림 · 서현 유년부 출석체크">
 <meta property="og:url" content="https://zogumm.github.io/yunyeon1-attendance/">
-<meta property="og:image" content="https://zogumm.github.io/yunyeon1-attendance/og-1200.png?v=1008">
+<meta property="og:image" content="https://zogumm.github.io/yunyeon1-attendance/og-1200.png?v=1008c">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
@@ -880,7 +880,8 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
 /* try_reg_1008.html */
 .reg-pick{position:fixed;inset:0;z-index:60;background:rgba(10,14,30,.72);display:flex;align-items:flex-end;justify-content:center}
 .reg-pick[hidden]{display:none!important}
-.bs-call .hand{border:0;font:inherit;font-weight:900;cursor:pointer;background:#FFF3B8;color:#141414}
+.bs-call .hand{flex:1;padding:12px;border:0;border-radius:16px;font:inherit;font-size:15px;font-weight:900;cursor:pointer;background:#FFF3B8;color:#141414}
+.bs .bs-hand{margin-top:8px}
 .bs-call .hand.no{background:#F3EEE4;color:#B3261E}
 .reg-pick #rpQ{display:block;width:100%;box-sizing:border-box;margin:6px 0 2px;min-height:46px;padding:0 16px;border:2px solid #E6DDCC;border-radius:23px;background:#FBF8F2;font:inherit;font-size:16px;font-weight:700;color:#141414}
 .reg-pick #rpQ:focus{outline:none;border-color:#FDDA33}
@@ -1010,6 +1011,7 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
   <div class="bs-summary" id="bsSum"></div>
   <div class="bs-week-list" id="bsWeeks"></div>
   <div class="bs-call" id="bsBtns"></div>
+  <div class="bs-call bs-hand" id="bsHand"></div>
   <div id="bsWhy">
     <h4>오늘 못 온 이유</h4>
     <div class="reasons" id="bsReasons"></div>
@@ -1760,12 +1762,13 @@ function openKid(name) {
   var tb = el('button', 'hand', S.checked[name] ? '⏱ 시각 고치기' : '⏱ 출석 시각 적기');
   tb.type = 'button';
   tb.onclick = function () { handTime(name); };
-  btns.appendChild(tb);
+  var hb = $('bsHand'); hb.textContent = '';   // 10-08 그멩님: 전화·문자와 한 줄에 끼면 찌그러져서 아래 줄로
+  hb.appendChild(tb);
   if (S.checked[name]) {
     var cb = el('button', 'hand no', '출석 취소');
     cb.type = 'button';
     cb.onclick = function () { handCancel(name); };
-    btns.appendChild(cb);
+    hb.appendChild(cb);
   }
 
   // 못 온 이유는 오늘 아직 안 온 아이에게만
