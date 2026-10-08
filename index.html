@@ -880,6 +880,8 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
 /* try_reg_1008.html */
 .reg-pick{position:fixed;inset:0;z-index:60;background:rgba(10,14,30,.72);display:flex;align-items:flex-end;justify-content:center}
 .reg-pick[hidden]{display:none!important}
+.bs-call .hand{border:0;font:inherit;font-weight:900;cursor:pointer;background:#FFF3B8;color:#141414}
+.bs-call .hand.no{background:#F3EEE4;color:#B3261E}
 .reg-pick #rpQ{display:block;width:100%;box-sizing:border-box;margin:6px 0 2px;min-height:46px;padding:0 16px;border:2px solid #E6DDCC;border-radius:23px;background:#FBF8F2;font:inherit;font-size:16px;font-weight:700;color:#141414}
 .reg-pick #rpQ:focus{outline:none;border-color:#FDDA33}
 .reg-pick [hidden]{display:none!important}
@@ -1025,6 +1027,7 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
   <p class="mh"><b id="menuName"></b> <span id="menuTitle">선생님</span></p>
   <button onclick="closeSheets();openPrint()">🖨️ QR 카드 인쇄</button>
   <button onclick="closeSheets();openReg()">🙂 얼굴 등록</button>
+  <button onclick="closeSheets();changeMyPin()">🔑 PIN 바꾸기</button>
   <button onclick="closeSheets();changeLate()">⚙ 지각 기준 시각</button>
   <button onclick="closeSheets();load(S.date)">↻ 새로 불러오기</button>
   <button class="out" onclick="closeSheets();logout()">나가기</button>
@@ -1094,7 +1097,7 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
   <input id="lgPin" type="password" inputmode="numeric" maxlength="4" placeholder="" autocomplete="new-password">
   <button class="go" onclick="doLogin()">들어가기</button>
   <div id="loginMsg"></div>
-  <p class="login-hint">PIN은 <b>휴대폰 번호 뒷 4자리</b>예요.</p>
+  <p class="login-hint">PIN은 <b>휴대폰 번호 뒷 4자리</b>예요.<br>들어간 뒤 오른쪽 위 내 이름을 눌러 바꿀 수 있어요.</p>
 </div></div>
 
 <script>
@@ -1103,7 +1106,7 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
 (function () {
   if (window.google && google.script && google.script.run) return;
   var API_URL = 'https://script.google.com/macros/s/AKfycbwI2SHxX_wKzyBAEvWA2qAPbJShZKfBPzSRs2BC7MV1ewEwTePpyb5Xg8A9DjxJrS2mOw/exec';
-  var FNS = ['login', 'getBoot', 'setCheck', 'checkByQr', 'getFaces', 'addFace', 'clearFaces', 'getAvatars', 'setReason', 'setLateTime', 'addPerson', 'setHomework'];
+  var FNS = ['login', 'getBoot', 'setCheck', 'checkByQr', 'getFaces', 'addFace', 'clearFaces', 'getAvatars', 'setReason', 'setLateTime', 'addPerson', 'setHomework', 'changePin'];
   function runner(ok, fail) {
     var r = {
       withSuccessHandler: function (f) { return runner(f, fail); },
@@ -1753,6 +1756,17 @@ function openKid(name) {
   } else {
     btns.appendChild(el('span', '', '연락처 없음 (출석부 연락처 칸이 비어 있어요)'));
   }
+  // 10-08 그멩님: 인식이 안 됐거나 잘못 됐을 때 손으로 출석·시각 적기/취소
+  var tb = el('button', 'hand', S.checked[name] ? '⏱ 시각 고치기' : '⏱ 출석 시각 적기');
+  tb.type = 'button';
+  tb.onclick = function () { handTime(name); };
+  btns.appendChild(tb);
+  if (S.checked[name]) {
+    var cb = el('button', 'hand no', '출석 취소');
+    cb.type = 'button';
+    cb.onclick = function () { handCancel(name); };
+    btns.appendChild(cb);
+  }
 
   // 못 온 이유는 오늘 아직 안 온 아이에게만
   $('bsWhy').className = S.checked[name] ? 'off' : '';
@@ -1895,6 +1909,20 @@ $('bsMemo').addEventListener('input', drawReasons);
 // ── 내 이름 메뉴 · 지각 기준 ─────────────────────────────
 function openMenu() { $('dim').classList.add('show'); $('menu').classList.add('show'); }
 function closeSheets() { ['dim', 'bs', 'arr', 'menu'].forEach(function (k) { $(k).classList.remove('show'); }); }
+function changeMyPin() {
+  var a = prompt('새 PIN을 넣어 주세요 (숫자 4자리)');
+  if (a == null) return;
+  a = a.trim();
+  if (!/^\d{4}$/.test(a)) { toast('숫자 4자리로 넣어 주세요'); return; }
+  var b = prompt('한 번 더 넣어 주세요');
+  if (b == null) return;
+  if (b.trim() !== a) { toast('두 번 넣은 숫자가 달라요. 다시 해 주세요'); return; }
+  call('changePin', [a], function () {
+    S.auth.pin = a;
+    try { sessionStorage.setItem('att_auth', JSON.stringify(S.auth)); } catch (e) {}
+    toast('PIN을 바꿨어요. 다음부터 새 PIN으로 들어오세요');
+  });
+}
 function changeLate() {
   var t = prompt('지각 기준 시각을 넣어 주세요 (예: 9:50)\n이 시각보다 늦게 오면 지각으로 표시돼요. 모든 선생님께 같이 바뀌어요.', S.lateBase);
   if (t == null) return;
@@ -2381,6 +2409,34 @@ function rpFilter() {
     [].forEach.call(kids[i + 1].children, function (b) { var on = !q || b.dataset.name.indexOf(q) >= 0; b.hidden = !on; if (on) any = true; });
     kids[i].hidden = kids[i + 1].hidden = !any;
   }
+}
+function handTime(name) {
+  var cur = S.checked[name] && S.checked[name] !== '…' ? S.checked[name] : '';
+  var t = prompt(name + ' 출석 시각을 넣어 주세요 (예: 9:42)\n비워 두면 지금 시각으로 적어요', cur);
+  if (t == null) return;
+  t = t.trim().replace('：', ':');
+  if (t && !/^\d{1,2}:\d{2}$/.test(t)) { toast('시각은 9:42처럼 넣어 주세요'); return; }
+  var before = S.checked[name];
+  S.checked[name] = '…'; render(); openKid(name);
+  call('setCheck', [S.date, name, true, t], function (r) {
+    S.checked[name] = r.time;
+    S.absent = S.absent.filter(function (n) { return n !== name; });
+    toast(name + ' 출석 ' + r.time);
+    render(); openKid(name);
+  }, function () {
+    if (before) S.checked[name] = before; else delete S.checked[name];
+    render(); openKid(name);
+  });
+}
+// 누르는 즉시 화면부터 지우고, 서버가 실패하면 되돌림(서버가 몇 초 늦을 때 여러 번 누르지 않게)
+function handCancel(name) {
+  var before = S.checked[name];
+  delete S.checked[name]; render(); openKid(name);
+  call('setCheck', [S.date, name, false], function () {
+    toast(name + ' 출석을 지웠어요');
+  }, function () {
+    S.checked[name] = before; render(); openKid(name);
+  });
 }
 function regPickClose() { $('regPick').hidden = true; REG.snap = null; }
 function regPickDo(name) {
