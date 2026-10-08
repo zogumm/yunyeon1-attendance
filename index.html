@@ -1110,6 +1110,8 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
 (function () {
   if (window.google && google.script && google.script.run) return;
   var API_URL = 'https://script.google.com/macros/s/AKfycbwI2SHxX_wKzyBAEvWA2qAPbJShZKfBPzSRs2BC7MV1ewEwTePpyb5Xg8A9DjxJrS2mOw/exec';
+  // 10-08: 앱 열자마자 서버를 미리 깨움(응답은 안 읽음). PIN 치는 동안 서버가 일어나서 첫 대기가 줄어듦
+  try { fetch(API_URL, { mode: 'no-cors', cache: 'no-store' }).catch(function () {}); } catch (e) {}
   var FNS = ['login', 'getBoot', 'setCheck', 'checkByQr', 'getFaces', 'addFace', 'clearFaces', 'getAvatars', 'setReason', 'setLateTime', 'addPerson', 'setHomework', 'changePin'];
   function runner(ok, fail) {
     var r = {
