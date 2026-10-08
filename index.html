@@ -862,6 +862,9 @@ html.fitz #scanTab .scan-art .hb{bottom:110px!important}
 html.fitz #scanTab .scan-art .hill{bottom:-176px!important}
 /* 삼각형을 동그라미 정가운데에 */
 #teamTab .team-head .back b{position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important}
+/* 10-08 실제 아이폰: 안전 여백 때문에 그림 자리가 좁아 머리가 잘림 → 남은 높이에 맞춰 캐릭터 크기 자동(최대 218px 높이) */
+#scanTab .scan-art .hb{width:auto!important;height:min(218px,calc(100% - 96px))!important;margin-left:0!important;left:50%!important;transform:translateX(-50%)!important}
+html.fitz #scanTab .scan-art .hb{height:min(316px,calc(100% - 120px))!important}
 </style>
 </head>
 <body>
