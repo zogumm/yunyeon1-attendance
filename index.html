@@ -21,7 +21,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800;900&display=swap">
 <base target="_top">
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>허니유 출석부</title>
 <style>
 /* ── 토큰: 회계 어플 색 + 글자 6단계(30/24/17/14/12/11) + 간격 4의 배수, 가장자리 20 ── */
@@ -868,6 +868,11 @@ html.fitz #scanTab .scan-art .hill{bottom:-176px!important}
 /* 10-08 실제 아이폰: 안전 여백 때문에 그림 자리가 좁아 머리가 잘림 → 남은 높이에 맞춰 캐릭터 크기 자동(최대 218px 높이) */
 #scanTab .scan-art .hb{width:auto!important;height:min(218px,calc(100% - 96px))!important;margin-left:0!important;left:50%!important;transform:translateX(-50%)!important}
 html.fitz #scanTab .scan-art .hb{height:min(316px,calc(100% - 120px))!important}
+
+/* try_login_1008.html */
+/* 10-08 그멩님: 아이폰 확대 막기 — 입력칸 글자 16px 미만이면 누를 때 자동 확대됨, 두 번 톡 확대도 막음 */
+input,select,textarea{font-size:16px!important}
+html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
 </style>
 </head>
 <body>
@@ -2349,5 +2354,6 @@ $('lgPin').addEventListener('keydown', function (e) { if (e.key === 'Enter') doL
 if (S.auth) load(''); else showLogin('');
 </script>
 <script>(function(){var pr=document.createElement('div');pr.style.cssText='position:fixed;visibility:hidden;pointer-events:none;top:0;left:0;padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)';function fit(){if(!pr.parentNode)document.body.appendChild(pr);var cs=getComputedStyle(pr),ins=(parseFloat(cs.paddingTop)||0)+(parseFloat(cs.paddingBottom)||0);var w=innerWidth,h=innerHeight,z=Math.min(w/390,h/(844+ins)),r=document.documentElement;if(Math.abs(z-1)<0.02)z=1;r.style.zoom=z!==1?z:'';r.classList.toggle('fitz',z>1);r.classList.toggle('shrink',z<1);r.style.setProperty('--fh',(h/z)+'px');}fit();addEventListener('resize',fit);addEventListener('orientationchange',fit);})();</script>
+<script>document.addEventListener('gesturestart',function(e){e.preventDefault();});document.addEventListener('dblclick',function(e){e.preventDefault();},{passive:false});</script>
 </body>
 </html>
