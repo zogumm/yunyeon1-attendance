@@ -1088,7 +1088,7 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
   <input id="lgPin" type="password" inputmode="numeric" maxlength="4" placeholder="" autocomplete="new-password">
   <button class="go" onclick="doLogin()">들어가기</button>
   <div id="loginMsg"></div>
-  <p class="login-hint">교사 명단에 있는 선생님만 들어올 수 있어요. PIN(숫자 4자리)은 <b>담당 선생님께 받아</b> 주세요.</p>
+  <p class="login-hint">PIN은 <b>휴대폰 번호 뒷 4자리</b>예요.</p>
 </div></div>
 
 <script>
@@ -1552,8 +1552,17 @@ function renderTeams() {
 function hwSym(v) { return v === 'O' ? '○' : v === '△' ? '△' : v === 'X' ? '✕' : ''; }
 function hwCls(v) { return v === 'O' ? 'o' : v === '△' ? 't' : v === 'X' ? 'x' : ''; }
 // 캐리커쳐 그림이 있으면 그림대로 바탕 없이, 없으면 fillAv가 정한 색 동그라미
+// 10-08 그멩님: 캐리커쳐 없는 아이는 시안 아이 얼굴 5종 중 하나(나중에 캐리커쳐로 교체). 명단 순서로 골라 새로고침해도 같은 얼굴
+function kidFace(a, p) {
+  if (p.teacher || a.querySelector('img')) return;
+  var h = S.people.filter(function (q) { return !q.teacher; }).indexOf(p);   // 명단 순서대로 돌아가며 → 옆 친구끼리 안 겹침
+  if (h < 0) h = 0;
+  var im = new Image(); im.src = 'kid_face' + (h % 5 + 1) + '.png'; im.alt = '';
+  a.textContent = ''; a.appendChild(im);
+}
 function avatarLike(p) {
   var a = avatar(p);
+  kidFace(a, p);
   if (a.querySelector('img')) a.style.background = 'transparent';
   return a;
 }
@@ -1654,6 +1663,7 @@ function openKid(name) {
   var av = $('bsAv');
   av.className = 'av kid-avatar';
   fillAv(av, p);
+  kidFace(av, p);
   if (av.querySelector('img')) av.style.background = '#FFF4CC';
 
   $('bsName').textContent = p.name;
