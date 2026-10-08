@@ -812,6 +812,7 @@ body:has(#scanTab.on){background:#FAF5EA}
 #login .k,.hero .k,p.k{color:#5C4A12!important;opacity:1!important}
 
 /* ⑤ 7주표 이름 아래 '이수 위험' 꼬리표 */
+.t7-who .t7-tch{font-size:10px;line-height:12px;font-weight:800;color:#8A8274}
 .t7-risk{font-style:normal;font-size:12px;line-height:16px;font-weight:900;color:#fff;background:#D01F2B;border-radius:8px;padding:0 6px;margin-top:2px;white-space:nowrap}
 
 /* ⑥ 출석 점을 색 말고 모양으로도: 지각 = 네모, 결석 = 빗금 */
@@ -1118,13 +1119,16 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
       r[name] = function () {
         var args = Array.prototype.slice.call(arguments);
         // 10-08: 서버가 처음 깨어날 때 연결이 끊기면(Failed to fetch) 읽기 기능은 2번까지 다시 시도
-        var tries = /^(login|getBoot|getFaces|getAvatars|setCheck|setHomework|checkByQr)$/.test(name) ? 3 : 1;
+        // 10-08 그멩님: 서버가 깨는 데 15초쯤 걸림(잰 값) → 읽기는 6번(약 27초), 쓰기는 3번까지 간격을 늘려 가며 기다림
+        var isRead = /^(login|getBoot|getFaces|getAvatars)$/.test(name);
+        var tries = isRead ? 6 : (/^(setCheck|setHomework|checkByQr|changePin|setPins)$/.test(name) ? 3 : 1);
+        var waits = isRead ? [1500, 3000, 5000, 8000, 10000] : [2000, 4000];
         (function go(n) {
           return fetch(API_URL, { method: 'POST', redirect: 'follow',
                          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                          body: JSON.stringify({ fn: name, args: args }) })
             .then(function (res) { return res.json(); })
-            .catch(function (e) { if (n > 1) return new Promise(function (r) { setTimeout(r, 1500); }).then(function () { return go(n - 1); }); throw e; });
+            .catch(function (e) { if (n > 1) { var w = waits[tries - n] || 5000; return new Promise(function (r) { setTimeout(r, w); }).then(function () { return go(n - 1); }); } throw e; });
         })(tries)
           .then(function (o) { if (!o || !o.ok) throw new Error((o && o.err) || '서버 오류'); return o.r; })
           .then(function (v) { if (ok) ok(v); }, function (e) { if (fail) fail(e); });
@@ -1160,6 +1164,7 @@ function toast(msg, ms) {
 function call(fn, args, ok, fail) {
   var r = google.script.run.withSuccessHandler(ok).withFailureHandler(function (e) {
     var msg = ((e && e.message) || String(e)).replace(/^Error:\s*/, '');
+    if (/Unexpected token|not valid JSON|Failed to fetch|NetworkError|Load failed/.test(msg)) msg = '서버가 아직 깨어나는 중이에요. 잠시 뒤 다시 해 주세요';   // 10-08: 못 알아볼 오류 문구 대신
     if (/로그인|PIN|교사 명단/.test(msg)) showLogin(msg);
     else toast('⚠️ ' + msg);
     if (fail) fail(e);
@@ -1325,8 +1330,35 @@ function reasonCls(r) {
 }
 
 // ── 불러오기 ─────────────────────────────────────────────
+// 10-08 그멩님: 구글 서버가 잠에서 깨는 데 10초 넘게 걸려서(잰 값 14.8초), 마지막으로 받은 출석부를 폰에 저장해 두고
+// 다음에 열 때 그걸 먼저 보여준 뒤 서버 답이 오면 바꿔 끼움(회계 어플과 같은 방식). 처음 열 때(명단이 비었을 때)만 씀.
+function bootKey(date) { return 'att_boot_' + ((S.auth && S.auth.name) || '') + '_' + (date || 'last'); }
 function load(date) {
+  var cached = null;
+  try { cached = JSON.parse(localStorage.getItem(bootKey(date)) || 'null'); } catch (e) {}
+  if (cached && cached.people && !(S.people && S.people.length)) {
+    applyBoot(cached);
+    $('todaySub').textContent = '서버에서 최신 상태 불러오는 중…';
+  }
   call('getBoot', [date || ''], function (d) {
+    try {
+      localStorage.setItem(bootKey(date), JSON.stringify(d));
+      if (date) localStorage.setItem(bootKey(''), JSON.stringify(d));
+    } catch (e) {}
+    S.bootRetry = 0;
+    applyBoot(d);
+  }, function () {
+    // 서버가 끝내 안 깨어나면 10초 뒤 한 번 더(최대 3번), 그동안 저장해 둔 화면은 그대로 보임
+    S.bootRetry = (S.bootRetry || 0) + 1;
+    if (S.bootRetry <= 3) {
+      $('todaySub').textContent = '서버가 깨어나는 중… 10초 뒤 다시 불러와요 (' + S.bootRetry + '/3)';
+      setTimeout(function () { load(date); }, 10000);
+    } else {
+      $('todaySub').textContent = '서버 연결이 안 돼요. 오른쪽 위 내 이름 → 새로 불러오기를 눌러 주세요';
+    }
+  });
+}
+function applyBoot(d) {
     S.date = d.date;
     S.dates = d.dates;
     S.people = d.people;
@@ -1354,7 +1386,6 @@ function load(date) {
     if (S.team !== '전체' && teams().indexOf(S.team) < 0) S.team = '전체';
     setMe();
     render();
-  });
 }
 
 function titleOf(n) { return ({ '김종원': '강도사님' })[n] || '선생님'; }   // 호칭이 다른 분만 여기에
@@ -1583,6 +1614,8 @@ function renderTeam() {
   var t = S.team;
   var mem = S.people.filter(function (p) { return t === '전체' || p.jo === t; });
   var ks = mem.filter(function (p) { return !p.teacher; });
+  // 10-08 그멩님: 시험 기간엔 선생님도 조 카드 숫자에 들어가므로 7주표에도 선생님 줄을 아이 아래에 보여줌
+  if (typeof COUNT_TEACHERS !== 'undefined' && COUNT_TEACHERS) ks = ks.concat(mem.filter(function (p) { return p.teacher; }));
   var n = ks.filter(function (p) { return S.checked[p.name]; }).length;
 
   $('teamName').textContent = S.dates.length + '주 한눈에';
@@ -1628,7 +1661,8 @@ function renderTeam() {
     who.type = 'button';
     who.appendChild(avatarLike(p));
     who.appendChild(el('span', 'nm', p.name));
-    if (absEq(p) >= 2) who.appendChild(el('em', 't7-risk', '이수 위험'));
+    if (p.teacher) who.appendChild(el('small', 't7-tch', titleOf(p.name)));
+    else if (absEq(p) >= 2) who.appendChild(el('em', 't7-risk', '이수 위험'));
     who.onclick = function () { openKid(p.name); };
     row.appendChild(who);
 
