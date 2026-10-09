@@ -2264,22 +2264,29 @@ function filmOn() {
   if (!f) { f = document.createElement('div'); f.id = 'faceFilm'; }
   if (v.parentNode !== ov) ov.insertBefore(v, ov.firstChild);
   if (f.parentNode !== ov) ov.insertBefore(f, v.nextSibling);
-  filmHole();
+  filmFollow();
 }
 function filmHole() {
   var f = $('faceFilm'), c = document.querySelector('#faceOv .cam');
   if (!f || !c || !$('faceOv').classList.contains('live')) return;
   var o = $('faceOv').getBoundingClientRect(), r = c.getBoundingClientRect();
   var x = r.left + r.width / 2 - o.left, y = r.top + r.height / 2 - o.top, R = r.width / 2 - 2;
-  var m = 'radial-gradient(circle at ' + x + 'px ' + y + 'px, transparent ' + R + 'px, #000 ' + (R + 1) + 'px)';
-  f.style.webkitMaskImage = m; f.style.maskImage = m;
+  var m = 'radial-gradient(circle at ' + x.toFixed(1) + 'px ' + y.toFixed(1) + 'px, transparent ' + R.toFixed(1) + 'px, #000 ' + (R + 1).toFixed(1) + 'px)';
+  if (f._m === m) return;   // 바뀐 게 없으면 그대로
+  f._m = m; f.style.webkitMaskImage = m; f.style.maskImage = m;
+}
+// 10-09: 창이 열리는 동안 글자·버튼이 자리를 잡으며 동그라미가 움직임 → 처음 2초는 매 화면마다, 그 뒤엔 인식할 때마다 구멍 위치를 다시 맞춤
+function filmFollow() {
+  var t0 = Date.now();
+  (function step() { filmHole(); if (Date.now() - t0 < 2000 && $('faceOv').classList.contains('live')) requestAnimationFrame(step); })();
 }
 function filmOff() {
   var v = $('fvideo'), c = document.querySelector('#faceOv .cam');
   if (c && v.parentNode !== c) c.insertBefore(v, c.firstChild);
 }
-window.addEventListener('resize', function () { setTimeout(filmHole, 200); });
-window.addEventListener('orientationchange', function () { setTimeout(filmHole, 400); });
+window.addEventListener('resize', filmFollow);
+window.addEventListener('orientationchange', filmFollow);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { filmHole(); });
 function closeFace() {
   if (pendLoad().length) toast('아직 ' + pendLoad().length + '건이 서버에 안 올라갔어요. 앱을 끄지 말고 잠시 두면 자동으로 올라가요', 6000);
   $('faceOv').classList.remove('live'); filmOff();
@@ -2292,6 +2299,7 @@ function closeFace() {
 }
 
 function faceTick() {
+  filmHole();
   var v = $('fvideo');
   if (FACE.busy || Date.now() < FACE.pauseUntil || !v.videoWidth) return;
   FACE.busy = true; FACE.busyAt = Date.now();
