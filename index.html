@@ -704,7 +704,7 @@ body:has(#scanTab.on){background:#FAF5EA}
 #faceOv .face-title{margin-top:4px;font-size:60px;line-height:1.1}
 #faceOv .camwrap{width:300px;margin-top:24px}
 #faceOv .cam-msg{margin-top:20px;padding:12px 28px;font-size:17px}
-#faceOv .cam-tabs{position:absolute;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translateX(-50%);display:flex;gap:4px;padding:5px;border-radius:99px;background:rgba(255,255,255,.6);z-index:3}
+#faceOv .cam-tabs{display:flex;gap:4px;padding:5px;border-radius:99px;background:rgba(255,255,255,.6);z-index:3}
 #faceOv .cam-tabs button{border:0;border-radius:99px;padding:12px 22px;background:none;font:inherit;font-size:17px;font-weight:900;color:#6E5410;white-space:nowrap}
 #faceOv .cam-tabs button.on{background:var(--ink);color:#fff}
 
@@ -899,24 +899,23 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
 .reg-pick .rp-b.t{background:#FFF3C4}
 .reg-pick .rp-cancel{display:block;width:100%;margin-top:16px;min-height:48px;border:0;border-radius:24px;background:#141414;color:#fff;font:inherit;font-size:16px;font-weight:900}
 
-/* 10-09 그멩님: 카메라가 켜지면 영상을 화면 전체 뒤에 깔고, 노랑은 반투명 막으로 위에 덮음(원 안만 또렷) */
-#faceOv.live{background:#D9BE52!important}   /* 10-09: 영상에 가려 안 보이지만, 아이폰이 맨 위 상태 표시줄을 이 색으로 칠함 → 노란 막 톤과 맞춤 */
-/* 10-09: 아이폰은 화면 높이가 모자라 안내 문구와 카메라 버튼이 눌려 겹침 → 눌리지 않게, 빈 후보 칸 없애고 간격 줄임 */
-#faceOv.live>*{flex-shrink:0}
-#faceOv #faceCands:empty{display:none}
-#faceOv .cam-msg{margin-top:16px}
-#faceOv.live .cam-tabs{margin-top:14px}
-#faceOv.live>*{position:relative;z-index:2}
-#faceOv.live>.camwrap{z-index:2}
-#faceOv.live>.cam-tabs{left:auto;top:auto;bottom:auto}   /* 10-09: 예전 배치의 bottom:30px이 위로 끌어올려 문구와 겹치던 것 */
+/* 10-09 카메라 화면: 영상은 화면 맨 바깥층 전체, 그 위 노란 막(#faceFilm)
+   - 준비 중: 막을 불투명하게 깔아 영상을 가림(영상을 투명하게 숨기면 아이폰이 '안 보이는 영상'으로 보고 멈출 수 있어서)
+   - 켜짐: 막을 반투명으로, 동그라미 자리만 구멍(filmHole)
+   - 영상·막은 터치를 안 받음(준비 중에도 앞/뒤 카메라 버튼이 눌리게) */
+#faceOv{--film-live:#D9BE52}
+#faceOv.live{background:var(--film-live)!important}   /* 영상에 가려 안 보이지만 아이폰 상태 표시줄이 이 색을 따라감 */
+#faceOv>#fvideo{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none}
+#faceOv>#faceFilm{position:absolute;inset:0;z-index:1;pointer-events:none;background:#FDDA33}
+#faceOv.live>#faceFilm{background:rgba(253,218,51,.6)}
+#faceOv>:not(#fvideo):not(#faceFilm){position:relative;z-index:2}
 #faceOv.live .cam{background:transparent}
 #faceOv.live .cam::after{display:none}
-/* 10-09 아이폰 수정: 영상·막을 동그라미 안에 두면 사파리가 엉뚱한 크기로 잘라 오른쪽·아래에 틈이 생김 → 화면 맨 바깥층에 직접 깔고, 막에 동그란 구멍 */
-#faceOv>#fvideo{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:0}
-#faceOv:not(.live)>#fvideo{opacity:0}
-#faceOv.live>#fvideo{position:absolute;z-index:0}
-#faceOv>#faceFilm{position:absolute;inset:0;z-index:1;pointer-events:none;background:rgba(253,218,51,.6)}
-#faceOv:not(.live)>#faceFilm{display:none}
+/* 작은 화면: 안내 문구·카메라 버튼은 눌리지 않게, 빈 후보 칸은 숨기고 후보가 많으면 그 칸만 스크롤 */
+#faceOv>.cam-msg,#faceOv>.cam-tabs{flex-shrink:0}
+#faceOv #faceCands:empty{display:none}
+#faceOv.live #faceCands{max-height:150px;overflow-y:auto}
+#faceOv.live .cam-tabs{margin-top:14px}
 
 #pendBadge{border:0;font:inherit;cursor:pointer;position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:99;background:#141414;color:#FDDA33;border-radius:99px;padding:8px 16px;font-size:13px;font-weight:900;white-space:nowrap}
 #pendBadge[hidden]{display:none}
@@ -2274,18 +2273,7 @@ function camPrep() {
   if (v.parentNode !== ov) ov.insertBefore(v, ov.firstChild);
   if (f.parentNode !== ov) ov.insertBefore(f, v.nextSibling);
 }
-function themeColor(c) {
-  var m = document.querySelector('meta[name="theme-color"]');
-  if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); }
-  if (!themeColor.orig) themeColor.orig = m.content || '#1B1E30';
-  m.content = c || themeColor.orig;
-}
-function filmOn() {
-  themeColor('#D9BE52');
-  camPrep();   // 이미 옮겨져 있으면 아무것도 안 함
-  var v = $('fvideo'); if (v.paused) v.play().catch(function () {});
-  filmFollow();
-}
+function filmOn() { filmFollow(); }   // 영상·막 자리는 openFace에서 camPrep으로 이미 잡혀 있음(켜진 뒤엔 절대 안 옮김)
 function filmHole() {
   var f = $('faceFilm'), c = document.querySelector('#faceOv .cam');
   if (!f || !c || !$('faceOv').classList.contains('live')) return;
@@ -2302,13 +2290,12 @@ function filmFollow() {
   var t0 = Date.now();
   (function step() { filmHole(); if (Date.now() - t0 < 2000 && $('faceOv').classList.contains('live')) requestAnimationFrame(step); })();
 }
-function filmOff() { themeColor(); }   // 영상은 바깥층에 그대로 둠(다시 옮기면 다음에 켤 때 멈출 수 있음)
 window.addEventListener('resize', filmFollow);
 window.addEventListener('orientationchange', filmFollow);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { filmHole(); });
 function closeFace() {
   if (pendLoad().length) toast('아직 ' + pendLoad().length + '건이 서버에 안 올라갔어요. 앱을 끄지 말고 잠시 두면 자동으로 올라가요', 6000);
-  $('faceOv').classList.remove('live'); filmOff();
+  $('faceOv').classList.remove('live');
   clearInterval(FACE.timer); clearInterval(FACE.guard);
   stopCam(FACE.stream);
   FACE.stream = null;
