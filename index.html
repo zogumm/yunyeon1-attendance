@@ -898,6 +898,18 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
 .reg-pick .rp-b small{margin-left:4px;color:#8A8274;font-weight:800}
 .reg-pick .rp-b.t{background:#FFF3C4}
 .reg-pick .rp-cancel{display:block;width:100%;margin-top:16px;min-height:48px;border:0;border-radius:24px;background:#141414;color:#fff;font:inherit;font-size:16px;font-weight:900}
+
+/* 10-09 그멩님: 카메라가 켜지면 영상을 화면 전체 뒤에 깔고, 노랑은 반투명 막으로 위에 덮음(원 안만 또렷) */
+#faceOv.live{background:transparent!important}
+#faceOv.live>*{position:relative;z-index:2}
+#faceOv.live>.camwrap{z-index:1}
+#faceOv.live>.cam-tabs{left:auto}
+#faceOv.live .cam{background:transparent;box-shadow:0 0 0 200vmax rgba(253,218,51,.6)}
+#faceOv.live .cam::after{display:none}
+#faceOv.live .cam video{position:fixed;left:0;top:0;width:100vw;height:100vh;object-fit:cover;z-index:-1}
+
+#pendBadge{border:0;font:inherit;cursor:pointer;position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:99;background:#141414;color:#FDDA33;border-radius:99px;padding:8px 16px;font-size:13px;font-weight:900;white-space:nowrap}
+#pendBadge[hidden]{display:none}
 </style>
 </head>
 <body>
@@ -1903,18 +1915,10 @@ function kidRow(p) {
 // 누르는 즉시 화면부터 바꾸고(빠르게), 서버가 실패하면 원래대로 되돌립니다.
 function toggle(p) {
   if (!S.date) { toast('출석부에 날짜 칸이 없어요'); return; }
-  var before = S.checked[p.name];
-  var want = !before;
-  if (want) S.checked[p.name] = '…'; else delete S.checked[p.name];
+  var want = !S.checked[p.name], t = hm(new Date());
+  if (want) { S.checked[p.name] = t; S.absent = S.absent.filter(function (n) { return n !== p.name; }); } else delete S.checked[p.name];
   render();
-  call('setCheck', [S.date, p.name, want], function (r) {
-    if (r.on) { S.checked[p.name] = r.time; S.absent = S.absent.filter(function (n) { return n !== p.name; }); }
-    else delete S.checked[p.name];
-    render();
-  }, function () {
-    if (before) S.checked[p.name] = before; else delete S.checked[p.name];
-    render();
-  });
+  pendAdd(S.date, p.name, want, t, false, '');   // 10-09: 대기열로(서버가 늦어도 화면은 바로, 기록은 안 사라짐)
 }
 
 // ── 사유 창(openKid는 위 패치에 있음) ──
@@ -2154,7 +2158,8 @@ function personOf(name) { return S.people.filter(function (p) { return p.name ==
 function openFace() {
   if (!S.date) { toast('출석부에 날짜 칸이 없어요'); return; }
   beep(null);   // 아이패드는 손가락으로 누른 순간에만 소리 권한을 줌 → 여기서 미리 열어 둠
-  say('출석을 준비하고 있어요', true);   // 음성도 마찬가지로 이 순간에 열어 둠
+  if (!openFace.quiet) say('출석을 준비하고 있어요', true);   // 음성도 마찬가지로 이 순간에 열어 둠
+  openFace.quiet = false;
   $('faceOv').classList.add('show');
   try { $('heroVid').pause(); } catch (e) {}
   $('faceCands').innerHTML = '';
@@ -2173,8 +2178,15 @@ function openFace() {
     $('faceOv').classList.add('live');   // 10-08 그멩님: 카메라 켜지면 노랑을 연하게
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (l) { FACE.wake = l; }).catch(function () {});
     idleMsg();
+    clearInterval(FACE.timer); clearInterval(FACE.guard);
     FACE.timer = setInterval(faceTick, 300);
-  }).catch(function (e) { $('faceMsg').textContent = '⚠️ ' + ((e && e.message) || e); });
+    FACE.guard = setInterval(faceGuard, 3000);
+    pendFlush();
+  }).catch(function (e) {
+    // 10-09: 서버가 늦거나 인터넷이 잠깐 끊겨도 멈추지 않고 5초 뒤 스스로 다시 준비
+    $('faceMsg').textContent = '⚠️ ' + ((e && e.message) || e) + ' — 5초 뒤 다시 준비해요';
+    setTimeout(function () { if ($('faceOv').classList.contains('show') && !FACE.stream) { openFace.quiet = true; openFace(); } }, 5000);
+  });
 }
 
 function idleMsg() {
@@ -2243,8 +2255,9 @@ function switchCam(f) {
     .catch(function (e) { $('faceMsg').textContent = '⚠️ 카메라를 못 켰어요: ' + ((e && e.message) || e); });
 }
 function closeFace() {
+  if (pendLoad().length) toast('아직 ' + pendLoad().length + '건이 서버에 안 올라갔어요. 앱을 끄지 말고 잠시 두면 자동으로 올라가요', 6000);
   $('faceOv').classList.remove('live');
-  clearInterval(FACE.timer);
+  clearInterval(FACE.timer); clearInterval(FACE.guard);
   stopCam(FACE.stream);
   FACE.stream = null;
   if (FACE.wake) { FACE.wake.release().catch(function () {}); FACE.wake = null; }
@@ -2255,7 +2268,7 @@ function closeFace() {
 function faceTick() {
   var v = $('fvideo');
   if (FACE.busy || Date.now() < FACE.pauseUntil || !v.videoWidth) return;
-  FACE.busy = true;
+  FACE.busy = true; FACE.busyAt = Date.now();
   kioskFrame(v, v.videoWidth, v.videoHeight)
     .catch(function (e) { faceLog('bad', (e && e.message) || e); })
     .then(function () { FACE.busy = false; });
@@ -2301,7 +2314,10 @@ function qrCheck(token) {
     call('checkByQr', [S.date, token], function (r) {
       FACE.recent[r.name] = Date.now();
       done(r); ok('qr:' + r.name);
-    }, function () { beep(false); say('등록되지 않은 QR코드예요', true); ok('qr-bad'); });
+    }, function (e) {
+      if (/등록되지 않은 QR/.test(String((e && e.message) || e))) { beep(false); say('등록되지 않은 QR코드예요', true); ok('qr-bad'); }
+      else { FACE.lastQr = ''; ok('qr-retry'); }   // 10-09: 인터넷·서버 오류면 같은 카드를 바로 다시 읽음
+    });
   });
 }
 
@@ -2310,11 +2326,91 @@ function faceCheck(name) {
   if (recentlyDone(name)) return Promise.resolve();
   FACE.recent[name] = Date.now();
   FACE.pauseUntil = Date.now() + 1500;
-  return new Promise(function (ok) {
-    call('setCheck', [S.date, name, true], function (r) { done(r); ok(); },
-      function () { delete FACE.recent[name]; ok(); });
-  });
+  // 10-09 그멩님: 서버 대답(4~35초)을 기다리지 않고 알아본 순간 바로 "띡"+이름 → 아이가 오래 서 있지 않게.
+  // 서버 기록은 뒤에서 보내고, 실패하면 체크를 되돌리고 알림.
+  var already = !!S.checked[name], t = hm(new Date());
+  done({ name: name, already: already, time: already ? S.checked[name] : t });
+  if (!already) { S.checked[name] = t; pendAdd(S.date, name, true, t, false, ''); }   // 10-09: 폰에 적어 두고 서버가 받을 때까지 다시 보냄
+  return Promise.resolve();
 }
+
+// ── 10-09 그멩님: 출석 화면을 몇 시간 켜 둬도 멈추지 않게 하는 안전장치 ──
+// ① 저장 대기열: 얼굴로 찍힌 출석을 폰(localStorage)에 적어 두고 서버가 받을 때까지 8초마다 다시 보냄. 앱을 껐다 켜도 남음.
+var PEND_KEY = 'att_pending', PEND = { busy: false, pausedUntil: 0 };
+function hm(d) { return d.getHours() + ':' + ('0' + d.getMinutes()).slice(-2); }
+function pendLoad() { try { return JSON.parse(localStorage.getItem(PEND_KEY) || '[]'); } catch (e) { return []; } }
+function pendSave(a) { try { localStorage.setItem(PEND_KEY, JSON.stringify(a)); } catch (e) {} }
+function pendDrop(x) { pendSave(pendLoad().filter(function (y) { return !(y.d === x.d && y.n === x.n && y.at === x.at); })); }
+// 출석 쓰기는 전부 여기로: 같은 아이의 앞선 기록은 지우고 마지막 행동만 남김(체크→취소면 취소만 보냄).
+// on=출석 여부, t=도착 시각("9:42"), force=선생님이 직접 넣은 시각(서버 시각을 덮어씀), msg=저장되면 띄울 말
+function pendAdd(date, name, on, t, force, msg) {
+  var a = pendLoad().filter(function (x) { return !(x.d === date && x.n === name); });
+  a.push({ d: date, n: name, on: !!on, t: t || '', force: !!force, msg: msg || '', at: Date.now(), tries: 0 });
+  pendSave(a); pendShow(); pendFlush();
+}
+function pendShow() {
+  var n = pendLoad().length, b = $('pendBadge');
+  if (!b) {
+    b = document.createElement('button'); b.id = 'pendBadge'; b.type = 'button';
+    b.onclick = function () { PEND.pausedUntil = 0; b.textContent = '지금 보내는 중…'; pendFlush(); };
+    document.body.appendChild(b);
+  }
+  b.textContent = '서버에 안 올라간 출석 ' + n + '건 · 누르면 지금 보내기';
+  b.hidden = !n;
+}
+function pendFlush() {
+  if (PEND.busy || !S.auth || Date.now() < PEND.pausedUntil) return;
+  var a = pendLoad(); if (!a.length) { pendShow(); return; }
+  var x = a[0]; PEND.busy = true;
+  // 바로 올라가면 시각 없이 보내 서버 시각을 쓰고(이미 있으면 안 덮음), 1분 넘게 밀렸으면 찍힌 시각을 같이 보냄
+  var sendT = x.on ? (x.force || Date.now() - x.at > 60000 ? x.t : '') : '';
+  google.script.run.withSuccessHandler(function (r) {
+    pendDrop(x); PEND.busy = false;
+    if (r && x.d === S.date) {
+      if (r.on) { S.checked[r.name] = r.time; S.absent = S.absent.filter(function (n) { return n !== r.name; }); }
+      else delete S.checked[r.name];
+      render();
+    }
+    if (x.msg) toast(x.msg);
+    pendShow(); if (pendLoad().length) setTimeout(pendFlush, 300);
+  }).withFailureHandler(function (e) {
+    PEND.busy = false;
+    var m = String((e && e.message) || e || '').replace(/^Error:s*/, '');
+    x.tries = (x.tries || 0) + 1;
+    var list = pendLoad(); list.forEach(function (y) { if (y.at === x.at && y.n === x.n) y.tries = x.tries; }); pendSave(list);
+    if (/출석부에 없는 이름|날짜 칸|시각은|명단에 없/.test(m)) {            // 다시 보내도 안 되는 것 → 빼고 알림, 화면은 서버 기준으로 새로 맞춤
+      pendDrop(x); toast('⚠️ ' + x.n + ' 저장 실패: ' + m); if (x.d === S.date) load(S.date);
+    } else if (/로그인|PIN|교사 명단/.test(m)) {                             // 로그인 문제 → 기록은 두고 1분 쉬었다가 다시
+      PEND.pausedUntil = Date.now() + 60000; showLogin(m);
+    } else if (!/Unexpected token|JSON|fetch|Network|Load failed|timeout|깨어나|시간|lock|잠금|too many/i.test(m) && x.tries >= 5) {
+      pendDrop(x); toast('⚠️ ' + x.n + ' 저장 실패(5번 시도): ' + m);          // 모르는 오류가 5번 계속되면 빼고 알림
+    }                                                                           // 인터넷·서버 깨는 중·잠금은 횟수 제한 없이 계속 다시 보냄
+    pendShow();
+  }).setCheck(S.auth, x.d, x.n, x.on, sendT);
+}
+setInterval(pendFlush, 8000);
+window.addEventListener('online', pendFlush);
+window.addEventListener('beforeunload', function (e) { if (pendLoad().length) { e.preventDefault(); e.returnValue = ''; } });
+try { pendShow(); } catch (e) {}
+
+// ② 지킴이: 3초마다 화면 꺼짐 방지·카메라·인식 고리가 살아 있는지 보고, 죽었으면 스스로 다시 살림.
+function faceGuard() {
+  if (!$('faceOv').classList.contains('show') || !FACE.stream || document.visibilityState !== 'visible') return;
+  if (navigator.wakeLock && (!FACE.wake || FACE.wake.released))
+    navigator.wakeLock.request('screen').then(function (l) { FACE.wake = l; }).catch(function () {});
+  if (FACE.busy && Date.now() - FACE.busyAt > 8000) FACE.busy = false;   // 한 장면 처리가 걸려도 멈추지 않게
+  var v = $('fvideo'), tr = FACE.stream.getVideoTracks()[0];
+  var dead = !tr || tr.readyState === 'ended' || v.paused || v.readyState < 2;
+  if (!dead) { FACE.deadN = 0; return; }
+  if (v.paused && tr && tr.readyState === 'live') v.play().catch(function () {});
+  if (++FACE.deadN >= 2 && !FACE.restarting) {   // 6초 넘게 죽어 있으면 카메라를 껐다 다시 켬
+    FACE.restarting = true;
+    stopCam(FACE.stream);
+    startCam(v, FACE.facing).then(function (st) { FACE.stream = st; FACE.deadN = 0; })
+      .catch(function () {}).then(function () { FACE.restarting = false; });
+  }
+}
+document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') faceGuard(); });
 
 function done(r) {
   S.checked[r.name] = r.time; render();
@@ -2457,27 +2553,16 @@ function handTime(name) {
   if (t == null) return;
   t = t.trim().replace('：', ':');
   if (t && !/^\d{1,2}:\d{2}$/.test(t)) { toast('시각은 9:42처럼 넣어 주세요'); return; }
-  var before = S.checked[name];
-  S.checked[name] = '…'; render(); openKid(name);
-  call('setCheck', [S.date, name, true, t], function (r) {
-    S.checked[name] = r.time;
-    S.absent = S.absent.filter(function (n) { return n !== name; });
-    toast(name + ' 출석 ' + r.time);
-    render(); openKid(name);
-  }, function () {
-    if (before) S.checked[name] = before; else delete S.checked[name];
-    render(); openKid(name);
-  });
+  var force = !!t;
+  t = (t || hm(new Date())).replace(/^0(d)/, '$1');
+  S.checked[name] = t; S.absent = S.absent.filter(function (n) { return n !== name; });
+  render(); openKid(name);
+  pendAdd(S.date, name, true, t, force, name + ' 출석 ' + t + ' 저장됨');   // 10-09: 직접 넣은 시각은 서버 시각을 덮어씀
 }
 // 누르는 즉시 화면부터 지우고, 서버가 실패하면 되돌림(서버가 몇 초 늦을 때 여러 번 누르지 않게)
 function handCancel(name) {
-  var before = S.checked[name];
   delete S.checked[name]; render(); openKid(name);
-  call('setCheck', [S.date, name, false], function () {
-    toast(name + ' 출석을 지웠어요');
-  }, function () {
-    S.checked[name] = before; render(); openKid(name);
-  });
+  pendAdd(S.date, name, false, '', false, name + ' 출석을 지웠어요');
 }
 function regPickClose() { $('regPick').hidden = true; REG.snap = null; }
 function regPickDo(name) {
