@@ -900,14 +900,21 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
 .reg-pick .rp-cancel{display:block;width:100%;margin-top:16px;min-height:48px;border:0;border-radius:24px;background:#141414;color:#fff;font:inherit;font-size:16px;font-weight:900}
 
 /* 10-09 그멩님: 카메라가 켜지면 영상을 화면 전체 뒤에 깔고, 노랑은 반투명 막으로 위에 덮음(원 안만 또렷) */
-#faceOv.live{background:transparent!important}
+#faceOv.live{background:#D9BE52!important}   /* 10-09: 영상에 가려 안 보이지만, 아이폰이 맨 위 상태 표시줄을 이 색으로 칠함 → 노란 막 톤과 맞춤 */
+/* 10-09: 아이폰은 화면 높이가 모자라 안내 문구와 카메라 버튼이 눌려 겹침 → 눌리지 않게, 빈 후보 칸 없애고 간격 줄임 */
+#faceOv.live>*{flex-shrink:0}
+#faceOv #faceCands:empty{display:none}
+#faceOv .cam-msg{margin-top:16px}
+#faceOv.live .cam-tabs{margin-top:14px}
 #faceOv.live>*{position:relative;z-index:2}
 #faceOv.live>.camwrap{z-index:2}
-#faceOv.live>.cam-tabs{left:auto}
+#faceOv.live>.cam-tabs{left:auto;top:auto;bottom:auto}   /* 10-09: 예전 배치의 bottom:30px이 위로 끌어올려 문구와 겹치던 것 */
 #faceOv.live .cam{background:transparent}
 #faceOv.live .cam::after{display:none}
 /* 10-09 아이폰 수정: 영상·막을 동그라미 안에 두면 사파리가 엉뚱한 크기로 잘라 오른쪽·아래에 틈이 생김 → 화면 맨 바깥층에 직접 깔고, 막에 동그란 구멍 */
-#faceOv.live>#fvideo{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:0}
+#faceOv>#fvideo{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:0}
+#faceOv:not(.live)>#fvideo{opacity:0}
+#faceOv.live>#fvideo{position:absolute;z-index:0}
 #faceOv>#faceFilm{position:absolute;inset:0;z-index:1;pointer-events:none;background:rgba(253,218,51,.6)}
 #faceOv:not(.live)>#faceFilm{display:none}
 
@@ -2164,6 +2171,7 @@ function openFace() {
   if (!openFace.quiet) say('출석을 준비하고 있어요', true);   // 음성도 마찬가지로 이 순간에 열어 둠
   openFace.quiet = false;
   $('faceOv').classList.add('show');
+  camPrep();   // 10-09: 카메라 켜기 전에 영상 자리부터
   try { $('heroVid').pause(); } catch (e) {}
   $('faceCands').innerHTML = '';
   $('faceLog').innerHTML = '';
@@ -2259,11 +2267,23 @@ function switchCam(f) {
     .catch(function (e) { $('faceMsg').textContent = '⚠️ 카메라를 못 켰어요: ' + ((e && e.message) || e); });
 }
 // 10-09: 카메라 영상을 화면 맨 바깥층으로 꺼내고, 노란 막에 동그라미 자리만 구멍을 뚫음(아이폰 사파리 틈 문제 해결)
-function filmOn() {
+// 아이폰 사파리는 켜진 카메라 영상을 화면 안에서 옮기면 영상이 멈춤(까만 화면) → 카메라를 켜기 "전에" 한 번만 옮겨 두고, 그 뒤엔 절대 안 옮김
+function camPrep() {
   var ov = $('faceOv'), v = $('fvideo'), f = $('faceFilm');
   if (!f) { f = document.createElement('div'); f.id = 'faceFilm'; }
   if (v.parentNode !== ov) ov.insertBefore(v, ov.firstChild);
   if (f.parentNode !== ov) ov.insertBefore(f, v.nextSibling);
+}
+function themeColor(c) {
+  var m = document.querySelector('meta[name="theme-color"]');
+  if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); }
+  if (!themeColor.orig) themeColor.orig = m.content || '#1B1E30';
+  m.content = c || themeColor.orig;
+}
+function filmOn() {
+  themeColor('#D9BE52');
+  camPrep();   // 이미 옮겨져 있으면 아무것도 안 함
+  var v = $('fvideo'); if (v.paused) v.play().catch(function () {});
   filmFollow();
 }
 function filmHole() {
@@ -2282,10 +2302,7 @@ function filmFollow() {
   var t0 = Date.now();
   (function step() { filmHole(); if (Date.now() - t0 < 2000 && $('faceOv').classList.contains('live')) requestAnimationFrame(step); })();
 }
-function filmOff() {
-  var v = $('fvideo'), c = document.querySelector('#faceOv .cam');
-  if (c && v.parentNode !== c) c.insertBefore(v, c.firstChild);
-}
+function filmOff() { themeColor(); }   // 영상은 바깥층에 그대로 둠(다시 옮기면 다음에 켤 때 멈출 수 있음)
 window.addEventListener('resize', filmFollow);
 window.addEventListener('orientationchange', filmFollow);
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { filmHole(); });
