@@ -902,11 +902,14 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
 /* 10-09 그멩님: 카메라가 켜지면 영상을 화면 전체 뒤에 깔고, 노랑은 반투명 막으로 위에 덮음(원 안만 또렷) */
 #faceOv.live{background:transparent!important}
 #faceOv.live>*{position:relative;z-index:2}
-#faceOv.live>.camwrap{z-index:1}
+#faceOv.live>.camwrap{z-index:2}
 #faceOv.live>.cam-tabs{left:auto}
-#faceOv.live .cam{background:transparent;box-shadow:0 0 0 200vmax rgba(253,218,51,.6)}
+#faceOv.live .cam{background:transparent}
 #faceOv.live .cam::after{display:none}
-#faceOv.live .cam video{position:fixed;left:0;top:0;width:100vw;height:100vh;object-fit:cover;z-index:-1}
+/* 10-09 아이폰 수정: 영상·막을 동그라미 안에 두면 사파리가 엉뚱한 크기로 잘라 오른쪽·아래에 틈이 생김 → 화면 맨 바깥층에 직접 깔고, 막에 동그란 구멍 */
+#faceOv.live>#fvideo{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:cover;z-index:0}
+#faceOv>#faceFilm{position:absolute;inset:0;z-index:1;pointer-events:none;background:rgba(253,218,51,.6)}
+#faceOv:not(.live)>#faceFilm{display:none}
 
 #pendBadge{border:0;font:inherit;cursor:pointer;position:fixed;left:50%;top:calc(10px + env(safe-area-inset-top));transform:translateX(-50%);z-index:99;background:#141414;color:#FDDA33;border-radius:99px;padding:8px 16px;font-size:13px;font-weight:900;white-space:nowrap}
 #pendBadge[hidden]{display:none}
@@ -2176,6 +2179,7 @@ function openFace() {
   }).then(function (st) {
     FACE.stream = st;
     $('faceOv').classList.add('live');   // 10-08 그멩님: 카메라 켜지면 노랑을 연하게
+    filmOn();
     if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (l) { FACE.wake = l; }).catch(function () {});
     idleMsg();
     clearInterval(FACE.timer); clearInterval(FACE.guard);
@@ -2254,9 +2258,31 @@ function switchCam(f) {
   startCam($('fvideo'), f).then(function (st) { if ($('faceOv').classList.contains('show')) FACE.stream = st; else stopCam(st); })   // 바꾸는 사이 닫았으면 카메라 끔
     .catch(function (e) { $('faceMsg').textContent = '⚠️ 카메라를 못 켰어요: ' + ((e && e.message) || e); });
 }
+// 10-09: 카메라 영상을 화면 맨 바깥층으로 꺼내고, 노란 막에 동그라미 자리만 구멍을 뚫음(아이폰 사파리 틈 문제 해결)
+function filmOn() {
+  var ov = $('faceOv'), v = $('fvideo'), f = $('faceFilm');
+  if (!f) { f = document.createElement('div'); f.id = 'faceFilm'; }
+  if (v.parentNode !== ov) ov.insertBefore(v, ov.firstChild);
+  if (f.parentNode !== ov) ov.insertBefore(f, v.nextSibling);
+  filmHole();
+}
+function filmHole() {
+  var f = $('faceFilm'), c = document.querySelector('#faceOv .cam');
+  if (!f || !c || !$('faceOv').classList.contains('live')) return;
+  var o = $('faceOv').getBoundingClientRect(), r = c.getBoundingClientRect();
+  var x = r.left + r.width / 2 - o.left, y = r.top + r.height / 2 - o.top, R = r.width / 2 - 2;
+  var m = 'radial-gradient(circle at ' + x + 'px ' + y + 'px, transparent ' + R + 'px, #000 ' + (R + 1) + 'px)';
+  f.style.webkitMaskImage = m; f.style.maskImage = m;
+}
+function filmOff() {
+  var v = $('fvideo'), c = document.querySelector('#faceOv .cam');
+  if (c && v.parentNode !== c) c.insertBefore(v, c.firstChild);
+}
+window.addEventListener('resize', function () { setTimeout(filmHole, 200); });
+window.addEventListener('orientationchange', function () { setTimeout(filmHole, 400); });
 function closeFace() {
   if (pendLoad().length) toast('아직 ' + pendLoad().length + '건이 서버에 안 올라갔어요. 앱을 끄지 말고 잠시 두면 자동으로 올라가요', 6000);
-  $('faceOv').classList.remove('live');
+  $('faceOv').classList.remove('live'); filmOff();
   clearInterval(FACE.timer); clearInterval(FACE.guard);
   stopCam(FACE.stream);
   FACE.stream = null;
