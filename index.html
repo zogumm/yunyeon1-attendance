@@ -2269,8 +2269,10 @@ function filmOn() {
 function filmHole() {
   var f = $('faceFilm'), c = document.querySelector('#faceOv .cam');
   if (!f || !c || !$('faceOv').classList.contains('live')) return;
-  var o = $('faceOv').getBoundingClientRect(), r = c.getBoundingClientRect();
-  var x = r.left + r.width / 2 - o.left, y = r.top + r.height / 2 - o.top, R = r.width / 2 - 2;
+  // 앱 전체가 화면 높이에 맞춰 축소(html zoom, 아이폰에서 약 0.91)돼 있으면 잰 좌표와 막의 좌표 배율이 달라짐 → 실제 배율 k로 나눔
+  var ov = $('faceOv'), o = ov.getBoundingClientRect(), r = c.getBoundingClientRect();
+  var k = ov.offsetWidth ? o.width / ov.offsetWidth : 1;
+  var x = (r.left + r.width / 2 - o.left) / k, y = (r.top + r.height / 2 - o.top) / k, R = r.width / 2 / k - 2;
   var m = 'radial-gradient(circle at ' + x.toFixed(1) + 'px ' + y.toFixed(1) + 'px, transparent ' + R.toFixed(1) + 'px, #000 ' + (R + 1).toFixed(1) + 'px)';
   if (f._m === m) return;   // 바뀐 게 없으면 그대로
   f._m = m; f.style.webkitMaskImage = m; f.style.maskImage = m;
