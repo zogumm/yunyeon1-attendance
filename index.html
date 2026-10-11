@@ -1130,7 +1130,7 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
 // 배포한 뒤 API_URL에 웹앱 exec 주소를 넣어야 Netlify에서 작동합니다.
 (function () {
   if (window.google && google.script && google.script.run) return;
-  var API_URL = 'https://script.google.com/macros/s/AKfycbwI2SHxX_wKzyBAEvWA2qAPbJShZKfBPzSRs2BC7MV1ewEwTePpyb5Xg8A9DjxJrS2mOw/exec';
+  var API_URL = 'https://script.google.com/macros/s/AKfycby6gdmP2umzP9UP0Khszq43iTagJrjcIoyWXSmz4ny_gTKgN9RUOPY_ogkCL9hDyB5N/exec';
   // 10-08: 앱 열자마자 서버를 미리 깨움(응답은 안 읽음). PIN 치는 동안 서버가 일어나서 첫 대기가 줄어듦
   try { fetch(API_URL, { mode: 'no-cors', cache: 'no-store' }).catch(function () {}); } catch (e) {}
   var FNS = ['login', 'getBoot', 'setCheck', 'checkByQr', 'getFaces', 'addFace', 'clearFaces', 'getAvatars', 'setReason', 'setLateTime', 'addPerson', 'setHomework', 'changePin'];
