@@ -2348,8 +2348,8 @@ function kioskFrame(src, w, h) {
     var rank = rankFaces(r.embedding), top = rank[0], gap = top.sim - (rank[1] ? rank[1].sim : 0);
     if (top.sim >= AUTO_SIM && gap >= AUTO_GAP) return faceCheck(top.name).then(function () { return 'face:' + top.name; });
     SAY.unsure++;
-    if (SAY.unsure === 3) say('다시 한번 얼굴을 맞춰 주세요');
-    else if (SAY.unsure >= 7 && SAY.unsure % 7 === 0) say('QR코드를 카메라 앞에 보여 주세요');
+    // 10-17 그멩님: QR은 안 쓰므로 "QR코드를 보여 주세요" 안내는 뺌 → 애매하면 얼굴 다시 맞추라는 안내만 반복
+    if (SAY.unsure === 3 || (SAY.unsure >= 7 && SAY.unsure % 7 === 0)) say('다시 한번 얼굴을 맞춰 주세요');
     return 'unsure:' + top.name + ':' + top.sim.toFixed(3);
   });
 }
