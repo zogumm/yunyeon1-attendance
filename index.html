@@ -281,8 +281,8 @@ button.today{width:100%;text-align:left;position:relative}
 .reg{padding:12px 16px;display:flex;flex-direction:column;gap:10px;flex:1;min-height:0}
 .reg select{padding:12px;border-radius:10px;border:none;font-size:17px;font-family:inherit}
 .reg .cam{flex:1;min-height:200px;border-radius:12px}
-.reg-btns{display:flex;gap:8px;flex-wrap:wrap}
-.reg-btns button,.reg-btns label{flex:1;text-align:center;background:#facc15;color:#1e293b;border:none;border-radius:12px;padding:13px;
+.reg-btns{display:flex;gap:8px}
+.reg-btns button,.reg-btns label{flex:1 1 0;min-width:0;display:flex;align-items:center;justify-content:center;white-space:nowrap;background:#facc15;color:#1e293b;border:none;border-radius:12px;min-height:52px;padding:0 8px;
   font-size:16px;font-weight:800;font-family:inherit;cursor:pointer}
 .reg-btns .ghost{background:rgba(255,255,255,.18);color:#fff}
 .p .fc{font-size:10px;color:#94a3b8;margin-left:2px}
@@ -1079,9 +1079,9 @@ html.fitz .tabbar{left:50%!important;right:auto!important;width:390px!important;
     <select id="regWho"></select>
     <div class="cam"><video id="rvideo" class="mirror" playsinline muted></video></div>
     <div class="reg-btns">
-      <button onclick="regShot()">📸 찍어서 등록</button>
-      <label>🖼 사진 올리기<input type="file" id="regFile" accept="image/*" multiple hidden></label>
-      <button class="ghost" onclick="regClear()">위 사람 얼굴 지우기</button>
+      <button onclick="regShot()">사진찍기</button>
+      <label>사진올리기<input type="file" id="regFile" accept="image/*" multiple hidden></label>
+      <button class="ghost" onclick="regClear()">얼굴지우기</button>
     </div>
     <div class="cam-msg" id="regMsg">얼굴이 정면으로 크게 나오게 찍으면, 누구인지 고르는 창이 떠요. 한 사람당 3~5장이면 좋아요.</div>
   <div class="reg-pick" id="regPick" hidden><div class="rp-in"><div class="rp-head"><img id="rpImg" alt=""><b>누구 얼굴인가요?</b></div><input id="rpQ" type="search" placeholder="이름 검색" autocomplete="off" aria-label="이름 검색" oninput="rpFilter()"><div id="rpList"></div><button type="button" class="rp-cancel" onclick="regPickClose()">취소</button></div></div>
@@ -1221,7 +1221,10 @@ function doLogin() {
 // 이름을 치면 그 선생님 캐리커쳐로 뿅 바뀝니다(회계 어플과 같은 그림·효과). 없는 사람은 허니비 그대로.
 // 지난번 받은 목록을 먼저 쓰고, 서버 목록이 오면 덮어씁니다(이름 치자마자 바뀌게).
 var AVATARS = {}, PRELOAD = [];
+// 10-16: 시트에 그림ID가 아직 없는 선생님 그림은 사이트에 같이 올림(avatars/). 시트에 있으면 시트 그림이 이김.
+var LOCAL_AVATARS = { '채경진': 'avatars/t_chaekj.png', '박서영': 'avatars/t_parksy.png', '이현아': 'avatars/t_leeha.png' };
 try { AVATARS = JSON.parse(localStorage.getItem('att_avatars') || '{}') || {}; } catch (e) {}
+AVATARS = Object.assign({}, LOCAL_AVATARS, AVATARS);
 var MASCOT_SRC = $('msImg').src;
 function updateAvatar() {
   var img = $('msImg'), url = AVATARS[$('lgName').value.replace(/\s+/g, '')];
@@ -1253,7 +1256,7 @@ function sparkle(box) {
 }
 $('lgName').addEventListener('input', updateAvatar);
 google.script.run.withSuccessHandler(function (m) {
-  AVATARS = m || {};
+  AVATARS = Object.assign({}, LOCAL_AVATARS, m || {});
   try { localStorage.setItem('att_avatars', JSON.stringify(AVATARS)); } catch (e) {}
   PRELOAD = Object.keys(AVATARS).map(function (n) { var p = new Image(); p.src = AVATARS[n]; return p; });
   updateAvatar();
@@ -2496,7 +2499,11 @@ function openReg() {
   ensureEngine().then(function () { return startCam($('rvideo')); }).then(function (st) {
     REG.stream = st;
     $('regMsg').textContent = '얼굴이 정면으로 크게 나오게 찍으면, 누구인지 고르는 창이 떠요. 한 사람당 3~5장이면 좋아요.';
-  }).catch(function (e) { $('regMsg').textContent = '⚠️ ' + ((e && e.message) || e); });
+  }).catch(function (e) {
+    $('regMsg').textContent = (e && e.name === 'NotAllowedError')
+      ? '⚠️ 카메라가 막혀 있어요. 창 위쪽 ⋮ 메뉴(또는 주소창 자물쇠) → 사이트 설정에서 카메라를 ‘허용’으로 바꾼 뒤 다시 열어 주세요. 사진올리기는 지금도 돼요.'
+      : '⚠️ ' + ((e && e.message) || e);
+  });
 }
 function closeReg() { stopCam(REG.stream); REG.stream = null; $('regOv').classList.remove('show'); render(); }
 
