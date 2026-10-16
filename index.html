@@ -1222,7 +1222,13 @@ function doLogin() {
 // 지난번 받은 목록을 먼저 쓰고, 서버 목록이 오면 덮어씁니다(이름 치자마자 바뀌게).
 var AVATARS = {}, PRELOAD = [];
 // 10-16: 시트에 그림ID가 아직 없는 선생님 그림은 사이트에 같이 올림(avatars/). 시트에 있으면 시트 그림이 이김.
-var LOCAL_AVATARS = { '채경진': 'avatars/t_chaekj.png', '박서영': 'avatars/t_parksy.png', '이현아': 'avatars/t_leeha.png' };
+var LOCAL_AVATARS = { '채경진': 'avatars/t_chaekj.png', '박서영': 'avatars/t_parksy.png', '이현아': 'avatars/t_leeha.png',
+  // 10-17 아이 캐리커처 23명(사진 받은 아이만, 원본=얼굴사진/아이/캐리커처/최종, 256px로 줄임)
+  '곽민준': 'avatars/k01.png', '김도윤': 'avatars/k02.png', '김서원': 'avatars/k03.png', '김서진': 'avatars/k04.png', '김시율': 'avatars/k05.png',
+  '김윤아': 'avatars/k06.png', '김택한': 'avatars/k07.png', '노지수': 'avatars/k08.png', '박세진': 'avatars/k09.png', '박시아': 'avatars/k10.png',
+  '박준아': 'avatars/k11.png', '박찬우': 'avatars/k12.png', '박현서': 'avatars/k13.png', '백하은': 'avatars/k14.png', '설하온': 'avatars/k15.png',
+  '신라엘': 'avatars/k16.png', '신은우': 'avatars/k17.png', '원석주': 'avatars/k18.png', '이설': 'avatars/k19.png', '이아리': 'avatars/k20.png',
+  '장유준': 'avatars/k21.png', '조하루': 'avatars/k22.png', '황예나': 'avatars/k23.png' };
 try { AVATARS = JSON.parse(localStorage.getItem('att_avatars') || '{}') || {}; } catch (e) {}
 AVATARS = Object.assign({}, LOCAL_AVATARS, AVATARS);
 var MASCOT_SRC = $('msImg').src;
@@ -1340,7 +1346,7 @@ function avColor(p) {
 }
 function avatar(p) { var a = el('span', 'av'); fillAv(a, p); return a; }
 function fillAv(a, p) {
-  var url = (typeof AVATARS !== 'undefined' && AVATARS) ? AVATARS[p.name] : '';
+  var url = (typeof AVATARS !== 'undefined' && AVATARS) ? (AVATARS[p.name] || AVATARS[String(p.name).replace(/\(.*?\)/g, '')]) : '';   // "신라엘(여)"도 찾게
   a.innerHTML = '';
   if (url) { var im = new Image(); im.src = url; im.alt = ''; a.appendChild(im); a.style.background = '#FFD83D'; }
   else { a.textContent = p.name.slice(-1); a.style.background = avColor(p); }
@@ -2220,9 +2226,10 @@ function voiceFile(text) {
   var L = VOICE.list;
   if (!L) return '';
   if (VOICE_FIXED[text]) return L.fixed[VOICE_FIXED[text]] || '';
-  var m = text.match(/^(.+?)(?:,)? (확인되었습니다|이미 출석했어요)$/);
+  // 10-17 그멩님: "OO 확인되었습니다" → "OO 출석했어요". 이름 녹음이 없으면 기기 목소리가 이름까지 읽음
+  var m = text.match(/^(.+?)(?:,)? (출석했어요|이미 출석했어요)$/);
   if (!m) return '';
-  return m[2] === '확인되었습니다' ? (L.names[m[1]] || '') : (L.fixed.already || '');
+  return m[2] === '출석했어요' ? ((L.names2 || {})[m[1]] || '') : (L.fixed.already || '');
 }
 function say(text, force) {
   $('faceMsg').textContent = text;
@@ -2336,7 +2343,8 @@ function kioskFrame(src, w, h) {
     // 원 안(화면 가운데)에 충분히 크게 들어온 얼굴만 알아봄 — 지나가는 다른 아이를 잡지 않게
     var b = r.face.box, m = Math.min(w, h);
     var dx = ((b[0] + b[2]) / 2 - w / 2) / m, dy = ((b[1] + b[3]) / 2 - h / 2) / m, size = (b[2] - b[0]) / m;
-    if (Math.abs(dx) > 0.18 || Math.abs(dy) > 0.2 || size < 0.16) { say('얼굴을 원 안에 맞춰 주세요'); return 'off-center'; }
+    // 10-17 그멩님: 원 안에 넣어도 안 잡힐 때가 있어 받아 주는 범위를 넓힘(가운데 0.18→0.28, 위아래 0.2→0.3, 최소 크기 0.16→0.11)
+    if (Math.abs(dx) > 0.28 || Math.abs(dy) > 0.3 || size < 0.11) { say('얼굴을 원 안에 맞춰 주세요'); return 'off-center'; }
     var rank = rankFaces(r.embedding), top = rank[0], gap = top.sim - (rank[1] ? rank[1].sim : 0);
     if (top.sim >= AUTO_SIM && gap >= AUTO_GAP) return faceCheck(top.name).then(function () { return 'face:' + top.name; });
     SAY.unsure++;
@@ -2459,7 +2467,7 @@ function done(r) {
   S.checked[r.name] = r.time; render();
   SAY.unsure = 0;
   beep(!r.already);
-  say(r.already ? r.name + ', 이미 출석했어요' : r.name + ' 확인되었습니다', true);
+  say(r.already ? r.name + ', 이미 출석했어요' : r.name + ' 출석했어요', true);
   faceHit((r.already ? '이미 출석 · ' : '✓ ') + r.name + (r.already ? '' : ' ' + r.time), r.already ? '#f59e0b' : '#22c55e');
 }
 
